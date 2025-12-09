@@ -1,0 +1,12 @@
+# agentic coding
+.claude/settings.local.json
+.beads/
+.gg/audits/
+PLAN.md
+
+# zig
+.zig-cache/
+zig-out/
+*.o
+
+

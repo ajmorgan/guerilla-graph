@@ -1,0 +1,314 @@
+# Harness Engineering with Claude Code
+
+## About This Book
+
+### Why
+
+Claude Code is powerful out of the box, but it hits walls: context loss mid-feature, agents that drift, no coordination for parallel work. This book documents the harness I built to solve these problems—patterns for injecting consistent quality, managing parallel agents, and delivering features at speed.
+
+### Goals
+
+- Parallelized agent workflows for delivering features
+- Consistent code quality through injection patterns
+- Low-drag environment for a single developer
+
+### Non-Goals
+
+- An autonomous framework; the goal is to enhance engineers, using their expertise to keep the AI aligned
+- VCS integration; the developer handles commits, the harness handles code
+- Building multiple features in parallel; we use parallel agents on a single feature, as task dependencies allow
+
+### Prerequisites
+
+Basic familiarity with Claude Code: context windows, compaction, agents. If terms like "token limit" or "subagent" are unfamiliar, start with the [Anthropic documentation](https://docs.anthropic.com).
+
+---
+
+## Part 1: The Problem
+
+### Where Vanilla Claude Code Falls Short
+
+**Context loss mid-feature**
+
+You're three hours into implementing a feature. The conversation compacts. Suddenly Claude doesn't remember the architectural decisions you made, the files you've already modified, or why you chose approach A over B. You spend the next hour re-explaining.
+
+**Quality drift**
+
+Without consistent guidance, code quality varies wildly. One response follows your patterns perfectly. The next introduces abstractions you didn't ask for, ignores your naming conventions, or over-engineers a simple fix.
+
+**No coordination for parallel work**
+
+You want to speed up a 10-task feature by running agents in parallel. But TodoWrite is single-threaded... no dependency awareness, no way to know which tasks can run concurrently without stepping on each other's files.
+
+**Agent isolation**
+
+You spawn an agent to implement a task. It starts fresh—no knowledge of the conversation context, the decisions made, or the patterns established. It makes different choices than you would have guided it toward.
+
+### What We're Solving For
+
+A harness that:
+- Injects engineering principles into every response (human and agent)
+- Tracks tasks with dependency awareness for safe parallelism
+- Provides reusable workflows that encode your process
+- Recovers context automatically after compaction or session start
+
+---
+
+## Part 2: The Harness
+
+### Engineering Principles Injection
+
+The core pattern: inject your standards into every prompt via hooks.
+
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md" }] }
+    ],
+    "SubagentStart": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md" }] }
+    ]
+  }
+}
+```
+
+Now every response—yours and every agent's—sees the same engineering principles. No drift.
+
+**What goes in engineering_principles.md:**
+- Coding standards (assertions, function length limits, explicit types)
+- Naming conventions
+- What to avoid (over-engineering, backwards compatibility unless asked)
+- Tool usage patterns
+
+### Commands as Reusable Workflows
+
+Slash commands encode multi-step processes that would otherwise require lengthy prompts.
+
+```
+.claude/commands/
+  gg-plan-gen.md       # Generate plan from feature spec
+  gg-plan-audit.md     # Audit plan for quality issues
+  gg-task-gen.md       # Generate tasks from plan
+  gg-task-audit.md     # Audit tasks for implementability
+  gg-execute.md        # Parallel agent execution
+```
+
+Each command is a markdown file with YAML frontmatter for arguments:
+
+```yaml
+---
+description: Generate plan from feature spec
+args:
+  - name: feature
+    description: Feature description or path to spec file
+    required: true
+---
+
+[Detailed instructions for Claude...]
+```
+
+**When commands beat natural language:**
+- Multi-step processes you repeat
+- Workflows that need consistency across uses
+- Instructions too long to type each time
+
+### MCP for Domain Verification
+
+MCP servers provide tools beyond Claude's built-ins. The pattern: use them for domain-specific verification.
+
+Example: `zig-docs` MCP server for Zig standard library lookup. Instead of Claude guessing at APIs, it can verify:
+
+```
+Use the zig-docs MCP server to verify ArrayList API before using it.
+```
+
+This catches errors that would otherwise require a compile cycle to find.
+
+### Context Recovery
+
+SessionStart hooks can recover context after compaction or new sessions:
+
+```json
+"SessionStart": [
+  { "matcher": "", "hooks": [{ "type": "command", "command": "gg workflow" }] }
+]
+```
+
+The `gg workflow` command outputs the full workflow protocol—how to find work, claim tasks, complete them. Claude reads this on every session start and knows how to proceed.
+
+---
+
+## Part 3: Hard-Won Lessons
+
+### Words That Work
+
+Certain words trigger careful behavior:
+
+| Word | Effect |
+|------|--------|
+| "maintainability" | Triggers careful design, avoids clever tricks |
+| "implementability" | Forces concrete thinking, verifiable steps |
+| "DRY" | Prevents duplication, looks for existing patterns |
+| "YAGNI" | Stops over-engineering, feature creep |
+
+### Words That Don't
+
+| Word | Problem |
+|------|---------|
+| "robust" | Vague, leads to defensive bloat |
+| "comprehensive" | Invites scope creep |
+| "flexible" | Abstraction bait, premature generalization |
+
+### Thinking Modes
+
+Default thinking often skips steps. For complex work, trigger deeper reasoning:
+
+- "ultrathink" in your engineering principles hook
+- Explicit in prompts for architecture decisions
+- Worth the extra tokens for multi-step planning
+
+**When to use ultrathink**
+
+- Short answer: always
+
+### Audit Convergence
+
+Iterative refinement with a stopping condition:
+
+1. Generate artifact (plan, task, code)
+2. Audit for issues (categorize: Critical, High, Medium, Low)
+3. If Critical or High issues exist, fix and re-audit
+4. Max 5 iterations, then stop and report
+
+The key insight: **set a max iteration limit**. Should the audit not converge, the engineer must make a judgement call.  Another round of audits, or to move forward.
+
+### Course Correction Patterns
+
+- actively review each edit
+- realign the ai if it strays
+- worst case `jj restore`
+
+**Checkpointing good states:**
+
+- always start your feature with a fresh VCS state
+- if things go wrong, you can restore
+
+---
+
+## Part 4: Parallel Agent Coordination
+
+### Why TodoWrite Fails at Scale
+
+- **Single-threaded mental model**: One task at a time, no parallelism
+- **No dependency awareness**: Can't express "B requires A"
+- **Lost on compaction**: Todo state exists only in context
+
+### DAG-Based Task Management
+
+Tasks as nodes, dependencies as edges. A task is "ready" when all its blockers are complete.
+
+```
+auth:001 (Setup) ─────┬──→ auth:002 (User entity) ──┬──→ auth:004 (Tests)
+                      └──→ auth:003 (Role entity) ──┘
+```
+
+After completing auth:001, both auth:002 and auth:003 are ready—they can run in parallel. auth:004 waits for both.
+
+**Ready task count = parallelism level.** Five ready tasks means you can spawn five agents.
+
+### The GG Workflow
+
+```
+1. /gg-plan-gen <feature>     → PLAN.md with phases, architecture
+2. /gg-plan-audit             → Iterate until no Critical/High issues
+3. /gg-task-gen               → Tasks in gg with dependencies set
+4. /gg-task-audit <plan>      → Iterate until all tasks are implementable
+5. /gg-execute <plan>         → Parallel agents, compilation gates
+```
+
+Each step has quality gates. No skipping audits—they prevent rework later.
+
+### Wave Execution
+
+```
+Wave 1: Find ready tasks → Spawn N agents → Wait for all → Compile → Close tasks
+Wave 2: Find newly ready tasks → Spawn N agents → ...
+Repeat until all tasks complete
+```
+
+**Critical rules:**
+- One task per agent
+- Compilation gate before closing ANY task in the wave
+- If build fails, keep all tasks open, fix, retry
+- File-level serialization: tasks touching same file must be chained
+
+### Recovery from Failed States/Compaction
+
+```bash
+# See what's stuck
+gg task ls --status in_progress --plan <plan>
+
+# Reset and retry
+gg update <task-id> --status open
+jj restore <files>  # or: git checkout <files>
+/gg-execute <plan>
+```
+
+---
+
+## Part 5: Reference
+
+### Complete Harness Structure
+
+```
+.claude/
+  settings.json              # Hooks, permissions, model defaults
+  settings.local.json        # User overrides (gitignored)
+  hooks/
+    engineering_principles.md    # Injected on every prompt
+    planning_context.md          # Planning mode context
+  commands/
+    gg-plan-gen.md
+    gg-plan-audit.md
+    gg-task-gen.md
+    gg-task-audit.md
+    gg-execute.md
+    _prompts/                # Agent prompt templates
+      implement-task.md
+      audit-task.md
+      review-work.md
+    _shared/                 # Reusable modules
+      project-context.md
+      dependency-analysis.md
+      quality-criteria.md
+CLAUDE.md                    # Domain memory, architecture, patterns
+.gg/
+  tasks.db                   # SQLite: plans, tasks, dependencies
+```
+
+### Quick Patterns
+
+| Situation | Pattern |
+|-----------|---------|
+| Quality drifting | Add to engineering_principles.md |
+| Repeated workflow | Create a command |
+| Need domain verification | Add MCP server |
+| Context lost | Add SessionStart hook |
+| Parallel work needed | Use gg with dependencies |
+| Audit looping | Set max iterations |
+
+---
+
+## Addendum
+
+### Resources
+
+- [Anthropic Documentation](https://docs.anthropic.com)
+- [Claude Code GitHub](https://github.com/anthropics/claude-code)
+
+### Acknowledgments
+
+- Indie Dev Dan; practical workflow patterns
+- The Claude Code team at Anthropic

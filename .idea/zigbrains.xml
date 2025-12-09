@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BuildScanner">
+    <option name="projects">
+      <list><![CDATA[{
+  "name": null,
+  "version": null,
+  "path": "/Users/adamm/code/work/guerilla_graph",
+  "steps": [
+    {
+      "name": "install",
+      "description": "Copy build artifacts to prefix path",
+      "kind": "install_artifact"
+    },
+    {
+      "name": "uninstall",
+      "description": "Remove build artifacts from prefix path",
+      "kind": "uninstall"
+    },
+    {
+      "name": "run",
+      "description": "Run the app",
+      "kind": "run"
+    },
+    {
+      "name": "test",
+      "description": "Run tests",
+      "kind": "run"
+    },
+    {
+      "name": "fmt",
+      "description": "Run zig fmt on all source files",
+      "kind": "fmt"
+    },
+    {
+      "name": "check",
+      "description": "Check if code compiles without building artifacts",
+      "kind": "compile"
+    },
+    {
+      "name": "docs",
+      "description": "Generate documentation",
+      "kind": "install_dir"
+    },
+    {
+      "name": "ci",
+      "description": "Run all quality checks (fmt, check, test)",
+      "kind": "top_level"
+    }
+  ],
+  "modules": [
+    {
+      "root": "src/root.zig",
+      "public": true,
+      "imports": []
+    },
+    {
+      "root": "src/main.zig",
+      "public": false,
+      "imports": [
+        {
+          "name": "guerilla_graph",
+          "owner": 0,
+          "module": 0
+        }
+      ]
+    },
+    {
+      "root": "tests/all.zig",
+      "public": false,
+      "imports": [
+        {
+          "name": "guerilla_graph",
+          "owner": 0,
+          "module": 0
+        }
+      ]
+    }
+  ],
+  "dependencies": []
+}]]></list>
+    </option>
+  </component>
+  <component name="ZigToolchain" toolchain="a4f96625-7b07-4052-b9de-0fb36949d24f" />
+</project>
