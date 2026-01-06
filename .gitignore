@@ -9,4 +9,18 @@ PLAN.md
 zig-out/
 *.o
 
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# local databases (keep .gg.db schema, ignore data)
+*.db-journal
+*.db-wal
+*.db-shm
+
 
