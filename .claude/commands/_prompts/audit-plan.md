@@ -16,7 +16,7 @@ CRITICAL: You must return findings in this exact JSON format at the end of your 
   "findings": [
     {
       "severity": "Critical|High|Medium|Low",
-      "category": "Maintainability|Implementability|Missing|TigerStyle",
+      "category": "Maintainability|Implementability|Missing|EngineeringPrinciples",
       "section": "Phase N: Name" or "File Change Summary",
       "line_number": 123,
       "issue": "Brief description of the issue",
@@ -56,7 +56,7 @@ Review the plan for:
 2. Are documentation updates included? (CLAUDE.md, README.md)
 3. Are integration points identified?
 
-**Coding Standards Adherence** (if project uses Tiger Style or similar):
+**Coding Standards Adherence** (per project's engineering_principles.md):
 1. Are assertions mentioned (2+ per function)?
 2. Are explicitly-sized types specified (if applicable to language)?
 3. Are resource management patterns documented (RAII, defer, etc.)?

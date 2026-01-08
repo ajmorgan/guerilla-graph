@@ -111,7 +111,7 @@ validation_commands:
 
 **Code Quality** (see `code-verification.md`):
 - [ ] Generated code follows `.claude/hooks/engineering_principles.md`
-- [ ] No Tiger Style violations
+- [ ] No violations of project's engineering principles
 
 **DO NOT Flag**:
 - Breaking changes documented in plan's "Breaking Changes" section

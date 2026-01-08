@@ -10,7 +10,7 @@
 
 You are reviewing the implementation of task {{task_id}} to verify it matches the task intent.
 
-**Purpose**: Verify sub-agents implemented what the task asked (not re-auditing Tiger Style - that was done in plan-audit/task-audit).
+**Purpose**: Verify sub-agents implemented what the task asked (not re-auditing coding standards - that was done in plan-audit/task-audit).
 
 ## Expected Changes
 

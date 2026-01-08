@@ -24,6 +24,151 @@ Basic familiarity with Claude Code: context windows, compaction, agents. If term
 
 ---
 
+## Part 0: Quick Start
+
+Get running in 5 minutes. Understand why later.
+
+### Step 1: Install gg
+
+```bash
+# Build from source (requires Zig 0.14+)
+cd guerilla_graph
+zig build -Doptimize=ReleaseFast
+cp zig-out/bin/gg ~/.local/bin/  # or anywhere in PATH
+```
+
+### Step 2: Initialize Your Project
+
+```bash
+cd your-project
+gg init                    # Creates .gg/tasks.db
+echo ".gg/" >> .gitignore  # Don't commit the database
+```
+
+### Step 3: Configure Hooks
+
+Create `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "gg workflow" }] }
+    ],
+    "UserPromptSubmit": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null" }] }
+    ],
+    "SubagentStart": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null" }] }
+    ]
+  }
+}
+```
+
+### Step 4: Add Engineering Principles
+
+Create `.claude/hooks/engineering_principles.md` with your coding standards. Example for a Java/Gradle project:
+
+```markdown
+# Engineering Principles
+
+ultrathink
+
+You are a senior software architect who cares deeply about maintainability.
+
+## Practices
+
+### code_exploration_and_planning
+1. Before changes, explore the codebase systematically
+2. Read the specific code sections you'll be modifying
+3. Look for existing patterns and utilities
+4. Never defer research—get it done
+
+### coding
+1. Audit documentation of files you update (keep concise)
+2. Audit tests of files you update (keep clean)
+3. Apply Single Responsibility Principle
+4. Apply DRY principle—look for existing abstractions
+5. Watch for N+1 query issues
+6. No backwards compatibility unless explicitly asked
+
+### tools
+1. Use `:compileJava` rather than `:build` unless running tests
+2. After `./gradlew test`, read `build/reports/tests/test/index.html`
+3. Use agents for exploration (>3 files), work directly for focused edits
+```
+
+The key: include **project-specific commands** and **tool guidance**, not just abstract principles.
+
+### Step 5: Copy Slash Commands
+
+Copy the `.claude/commands/` directory from guerilla_graph to your project:
+
+```bash
+cp -r /path/to/guerilla_graph/.claude/commands your-project/.claude/
+```
+
+### Step 6: Configure CLAUDE.md
+
+Create `CLAUDE.md` in your project root with:
+
+```markdown
+# CLAUDE.md
+
+## Build Commands
+- Build: `your-build-command`
+- Test: `your-test-command`
+
+## Architecture
+[Brief description of your codebase structure]
+```
+
+### Step 7: Run Your First Feature
+
+```bash
+# Start Claude Code in your project
+claude
+
+# Generate a plan
+/gg-plan-gen "Add user authentication with JWT tokens"
+
+# Audit the plan (iterates until quality passes)
+/gg-plan-audit
+
+# Generate tasks with dependencies
+/gg-task-gen
+
+# Audit tasks (parallel agents verify each task)
+/gg-task-audit auth
+
+# Execute with parallel agents
+/gg-execute auth
+```
+
+### What Just Happened?
+
+1. **gg workflow** injected on session start—Claude knows how to use the task system
+2. **engineering_principles.md** injected on every prompt—consistent quality
+3. **/gg-plan-gen** explored your codebase and created PLAN.md
+4. **/gg-plan-audit** iteratively refined until no critical issues
+5. **/gg-task-gen** converted the plan to gg tasks with dependencies
+6. **/gg-task-audit** verified each task has full implementation context
+7. **/gg-execute** ran parallel agents, compiled after each wave, closed tasks
+
+### Quick Reference
+
+```bash
+gg workflow              # Full protocol (run after compaction)
+gg ready                 # Find unblocked work
+gg start <task-id>       # Claim a task
+gg complete <task-id>    # Mark done
+gg task ls --plan <slug> # See all tasks in a plan
+```
+
+Now read on to understand *why* this works.
+
+---
+
 ## Part 1: The Problem
 
 ### Where Vanilla Claude Code Falls Short
