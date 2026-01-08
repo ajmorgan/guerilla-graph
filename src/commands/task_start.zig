@@ -32,6 +32,7 @@ pub const CommandError = error{
 /// Rationale: Agents claim tasks via start command to signal they are working on them.
 /// This prevents multiple agents from working on the same task simultaneously.
 pub fn handleTaskStart(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -87,7 +88,7 @@ pub fn handleTaskStart(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

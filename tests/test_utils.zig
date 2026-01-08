@@ -25,8 +25,9 @@ pub fn getTemporaryDatabasePath(allocator: std.mem.Allocator, test_name: []const
 
 /// Clean up a database file created for testing.
 /// Silently ignores errors if file doesn't exist.
-pub fn cleanupDatabaseFile(database_path: []const u8) void {
-    std.fs.cwd().deleteFile(database_path) catch {};
+/// Requires io parameter for new std.Io.Dir filesystem API.
+pub fn cleanupDatabaseFile(io: std.Io, database_path: []const u8) void {
+    std.Io.Dir.cwd().deleteFile(io, database_path) catch {};
 }
 
 // SQLite helper functions for test assertions

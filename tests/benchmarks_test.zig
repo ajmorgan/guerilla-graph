@@ -102,6 +102,7 @@ test "performance: graph queries with complex graph (<5ms target)" {
     // - Rationale comments explaining design choices
     // - Verify <5ms target with explicit checks
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // REQUIRES: ReleaseFast build mode
     // Rationale: Debug builds are 30-40x slower and cannot meet 5ms target.
@@ -119,8 +120,8 @@ test "performance: graph queries with complex graph (<5ms target)" {
 
     // Create temporary database for performance test
     const database_path = "/tmp/guerilla_graph_perf_graph_queries.db";
-    std.fs.cwd().deleteFile(database_path) catch {}; // Clean slate
-    defer std.fs.cwd().deleteFile(database_path) catch {};
+    std.Io.Dir.cwd().deleteFile(io, database_path) catch {}; // Clean slate
+    defer std.Io.Dir.cwd().deleteFile(io, database_path) catch {};
 
     // Initialize storage
     var storage = try Storage.init(allocator, database_path);

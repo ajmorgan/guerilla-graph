@@ -19,13 +19,14 @@ const test_utils = @import("test_utils.zig");
 test "updateTask: title only" {
     // Methodology: Update task title, verify change persists.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_update_task_title.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);
@@ -47,13 +48,14 @@ test "updateTask: title only" {
 test "updateTask: description only" {
     // Methodology: Update task description, verify change persists.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_update_task_description.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);
@@ -75,13 +77,14 @@ test "updateTask: description only" {
 test "updateTask: status only" {
     // Methodology: Update task status via updateTask, verify timestamps are set correctly.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_update_task_status.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);

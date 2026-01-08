@@ -20,13 +20,14 @@ test "createTask: successful creation with per-plan numbering" {
     // Methodology: Create task under plan, verify both internal ID and plan-relative
     // task number are correct by querying database. First task should be number 1.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_new_schema.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan first
     try storage.createPlan("auth", "Authentication", "User auth system", null);
@@ -62,13 +63,14 @@ test "createTask: per-plan sequential numbering" {
     // Methodology: Create multiple tasks under same plan, verify each gets
     // sequential plan_task_number (1, 2, 3, ...) by querying database.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_sequential_numbering.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("ui", "User Interface", "UI components", null);
@@ -120,13 +122,14 @@ test "createTask: independent numbering per plan" {
     // Methodology: Create tasks under different plans, verify each plan
     // maintains its own sequential numbering (both start at 1).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_independent_numbering.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create two plans
     try storage.createPlan("auth", "Authentication", "", null);
@@ -185,13 +188,14 @@ test "createTask: atomic counter increment" {
     // Methodology: Verify counter is atomically incremented by checking
     // plan's task_counter after task creation.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_atomic_counter.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("api", "API", "", null);
@@ -219,13 +223,14 @@ test "createTask: nonexistent plan fails" {
     // Methodology: Attempt to create task under nonexistent plan slug,
     // verify it fails with InvalidData error.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_nonexistent_plan.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to create task under nonexistent plan
     const result = storage.createTask("nonexistent", "Test Task", "Should fail");
@@ -236,13 +241,14 @@ test "createTask: UNIQUE constraint on plan_id and plan_task_number" {
     // Methodology: Manually insert task with duplicate (plan_id, plan_task_number),
     // verify UNIQUE constraint prevents insertion.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_unique_constraint.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);

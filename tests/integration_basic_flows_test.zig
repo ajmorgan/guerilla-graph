@@ -24,11 +24,12 @@ test "integration: create-label flow" {
     // 2. Retrieve the label to verify it was created
     // 3. Verify the label has correct fields
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "create_label_flow");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try Storage.init(allocator, database_path);
@@ -72,11 +73,12 @@ test "integration: create-task and show flow" {
     // 3. Retrieve the task to verify it was created
     // 4. Verify task has correct fields and links to label
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "create_task_flow");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try Storage.init(allocator, database_path);
@@ -128,11 +130,12 @@ test "integration: list-labels flow" {
     // 3. Verify all created labels appear in the list
     // 4. Verify labels contain aggregated task counts
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "list_labels_flow");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try Storage.init(allocator, database_path);
@@ -186,11 +189,12 @@ test "integration: delete-task flow" {
     // 3. Delete the task
     // 4. Verify task no longer exists
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "delete_task_flow");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try Storage.init(allocator, database_path);
@@ -230,11 +234,12 @@ test "integration: AUTOINCREMENT sequential IDs" {
     // Rationale: Sequential IDs make it easy to reference tasks by number and ensure
     // IDs are never reused, even after deletion (important for audit trails).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "autoincrement_seq");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try Storage.init(allocator, database_path);

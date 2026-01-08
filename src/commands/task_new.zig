@@ -38,7 +38,7 @@ const CreateArgs = struct {
 ///
 /// Rationale: Extracted from parseCreateArgs to reduce function length.
 /// Handles --title, --plan, --description, --description-file flags.
-fn parseCreateArgsParseFlags(allocator: std.mem.Allocator, arguments: []const []const u8, start_index: usize) !struct {
+fn parseCreateArgsParseFlags(io: std.Io, allocator: std.mem.Allocator, arguments: []const []const u8, start_index: usize) !struct {
     title: []const u8, // Task title (optional, may be empty)
     plan: ?[]const u8, // Plan slug (required by storage, optional flag for parsing)
     description: []const u8,
@@ -81,9 +81,9 @@ fn parseCreateArgsParseFlags(allocator: std.mem.Allocator, arguments: []const []
                 return CommandError.MissingArgument;
             }
             const file_path = arguments[index + 1];
-            const cwd = std.fs.cwd();
+            const cwd = std.Io.Dir.cwd();
             const max_size = std.Io.Limit.limited(10 * 1024 * 1024); // 10MB max
-            description = try cwd.readFileAlloc(file_path, allocator, max_size);
+            description = try cwd.readFileAlloc(io, file_path, allocator, max_size);
             description_owned = true; // Allocated, must free
             index += 2;
         } else {
@@ -106,12 +106,12 @@ fn parseCreateArgsParseFlags(allocator: std.mem.Allocator, arguments: []const []
 
 /// Parse create command arguments
 /// Command format: gg create --title <title> --plan <id> [--description <text>] [--description-file <path>]
-pub fn parseCreateArgs(allocator: std.mem.Allocator, arguments: []const []const u8) !CreateArgs {
+pub fn parseCreateArgs(io: std.Io, allocator: std.mem.Allocator, arguments: []const []const u8) !CreateArgs {
     // Assertions: Validate inputs (arguments may be empty if all flags)
     std.debug.assert(arguments.len >= 0);
 
     // Rationale: Parse flags using helper (starts at index 0 - no positional title)
-    const flags = try parseCreateArgsParseFlags(allocator, arguments, 0);
+    const flags = try parseCreateArgsParseFlags(io, allocator, arguments, 0);
 
     // Assertions: Postconditions (title may be empty - validation happens in handleTaskNew)
     if (flags.plan) |p| {
@@ -136,6 +136,7 @@ pub fn parseCreateArgs(allocator: std.mem.Allocator, arguments: []const []const 
 /// Dependencies should be added separately using 'gg dep add'.
 /// Uses TaskManager for business logic and Storage for data access.
 pub fn handleTaskNew(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -147,7 +148,7 @@ pub fn handleTaskNew(
     std.debug.assert(storage.database != null);
 
     // Parse command arguments
-    const args = try parseCreateArgs(allocator, arguments);
+    const args = try parseCreateArgs(io, allocator, arguments);
     defer {
         if (args.description_owned) {
             allocator.free(args.description);
@@ -193,7 +194,7 @@ pub fn handleTaskNew(
     // JSON mode: structured data for programmatic consumption.
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

@@ -32,6 +32,7 @@ pub const CommandError = error{
 /// Rationale: This command combines getTask (full details) + getBlockers + getDependents
 /// to provide a complete view of a task with its dependency context.
 pub fn handleTaskShow(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -96,7 +97,7 @@ pub fn handleTaskShow(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         // Rationale: Use format module functions to display task with dependencies.

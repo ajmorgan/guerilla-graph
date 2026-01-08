@@ -20,13 +20,14 @@ test "getTask: retrieves task with plan_slug from JOIN" {
     // Methodology: Create task and retrieve it, verify plan_slug is populated
     // correctly from JOIN with plans table.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_task_with_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "Auth system", null);
@@ -51,13 +52,14 @@ test "getTask: retrieves task with plan_slug from JOIN" {
 test "getTask: returns null for nonexistent task" {
     // Methodology: Query nonexistent task ID, verify null is returned.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_task_nonexistent.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Query nonexistent task
     const maybe_task = try storage.getTask(999);
@@ -72,13 +74,14 @@ test "getTaskByPlanAndNumber: resolves slug:number to internal ID" {
     // Methodology: Create task, lookup by slug:number, verify correct
     // internal task ID is returned.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_task_by_plan_and_number.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -96,13 +99,14 @@ test "getTaskByPlanAndNumber: resolves slug:number to internal ID" {
 test "getTaskByPlanAndNumber: returns null for nonexistent combination" {
     // Methodology: Query nonexistent slug:number combinations, verify null.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_task_by_plan_and_number_null.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and one task
     try storage.createPlan("auth", "Authentication", "", null);
@@ -121,13 +125,14 @@ test "getTaskByPlanAndNumber: distinguishes tasks between plans" {
     // Methodology: Create tasks with same plan_task_number under different plans,
     // verify lookup correctly distinguishes them.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_task_by_plan_and_number_distinguish.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create two plans with tasks numbered 1
     try storage.createPlan("auth", "Authentication", "", null);

@@ -37,6 +37,7 @@ pub const CommandError = error{
 /// Tasks are ordered by blocker_count descending (most blocked first) to help identify bottlenecks.
 /// See PLAN.md Section 7.4 for command specification.
 pub fn handleQueryBlocked(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -62,7 +63,7 @@ pub fn handleQueryBlocked(
         // Rationale: Get stdout writer for formatted output.
         // Use a buffered writer to ensure output is flushed properly.
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         // Rationale: Use format module to display blocked tasks with blocker counts.

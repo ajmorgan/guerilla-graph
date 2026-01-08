@@ -42,6 +42,7 @@ pub const CommandError = error{
 /// 5. completed_at invariant, 6. Invalid status, 7. Title length,
 /// 8. Schema version, 9. Missing indexes, 10. Large descriptions.
 pub fn handleDoctor(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -61,7 +62,7 @@ pub fn handleDoctor(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

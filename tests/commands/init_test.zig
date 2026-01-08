@@ -13,11 +13,22 @@ const utils = guerilla_graph.utils;
 const CommandError = init_commands.CommandError;
 const test_utils = @import("../test_utils.zig");
 
+/// Helper to change directory using C library.
+/// Allocates null-terminated string for C API.
+fn changeDir(allocator: std.mem.Allocator, path: []const u8) !void {
+    const path_z = try allocator.dupeZ(u8, path);
+    defer allocator.free(path_z);
+    if (std.c.chdir(path_z) != 0) {
+        return error.ChdirFailed;
+    }
+}
+
 test "special_commands.handleInit: successful initialization" {
     // Methodology: Verify init creates .gg directory and database with proper schema.
     // Tests the happy path of workspace initialization in a clean directory.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create unique temporary directory for test workspace
     const timestamp = utils.unixTimestamp();
@@ -25,23 +36,23 @@ test "special_commands.handleInit: successful initialization" {
     const test_dir = try std.fmt.bufPrint(&test_dir_buf, "/tmp/gg_test_init_success_{d}", .{timestamp});
 
     // Create test directory
-    try std.fs.makeDirAbsolute(test_dir);
-    defer std.fs.deleteTreeAbsolute(test_dir) catch {};
+    try std.Io.Dir.createDirAbsolute(io, test_dir, .default_dir);
+    defer std.Io.Dir.cwd().deleteTree(io, test_dir) catch {};
 
     // Change to test directory for init
     const original_cwd = try std.process.getCwdAlloc(allocator);
     defer allocator.free(original_cwd);
-    try std.posix.chdir(test_dir);
-    defer std.posix.chdir(original_cwd) catch {};
+    try changeDir(allocator, test_dir);
+    defer changeDir(allocator, original_cwd) catch {};
 
     // Execute init command with no arguments
     const args = &[_][]const u8{};
-    try init_commands.handleInit(allocator, args, false);
+    try init_commands.handleInit(io, allocator, args, false);
 
     // Verify .gg directory was created
     const gg_dir = try std.fs.path.join(allocator, &[_][]const u8{ test_dir, ".gg" });
     defer allocator.free(gg_dir);
-    std.fs.accessAbsolute(gg_dir, .{}) catch |err| {
+    std.Io.Dir.accessAbsolute(io, gg_dir, .{}) catch |err| {
         std.debug.print("Failed to access .gg directory: {any}\n", .{err});
         return err;
     };
@@ -49,7 +60,7 @@ test "special_commands.handleInit: successful initialization" {
     // Verify database file was created
     const db_path = try std.fs.path.join(allocator, &[_][]const u8{ test_dir, ".gg", "tasks.db" });
     defer allocator.free(db_path);
-    std.fs.accessAbsolute(db_path, .{}) catch |err| {
+    std.Io.Dir.accessAbsolute(io, db_path, .{}) catch |err| {
         std.debug.print("Failed to access database file: {any}\n", .{err});
         return err;
     };
@@ -67,6 +78,7 @@ test "special_commands.handleInit: already in workspace error" {
     // This prevents accidental re-initialization and data corruption.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create unique temporary directory for test workspace
     const timestamp = utils.unixTimestamp();
@@ -74,22 +86,22 @@ test "special_commands.handleInit: already in workspace error" {
     const test_dir = try std.fmt.bufPrint(&test_dir_buf, "/tmp/gg_test_init_already_{d}", .{timestamp});
 
     // Create test directory with existing .gg
-    try std.fs.makeDirAbsolute(test_dir);
-    defer std.fs.deleteTreeAbsolute(test_dir) catch {};
+    try std.Io.Dir.createDirAbsolute(io, test_dir, .default_dir);
+    defer std.Io.Dir.cwd().deleteTree(io, test_dir) catch {};
 
     const gg_dir = try std.fs.path.join(allocator, &[_][]const u8{ test_dir, ".gg" });
     defer allocator.free(gg_dir);
-    try std.fs.makeDirAbsolute(gg_dir);
+    try std.Io.Dir.createDirAbsolute(io, gg_dir, .default_dir);
 
     // Change to test directory for init
     const original_cwd = try std.process.getCwdAlloc(allocator);
     defer allocator.free(original_cwd);
-    try std.posix.chdir(test_dir);
-    defer std.posix.chdir(original_cwd) catch {};
+    try changeDir(allocator, test_dir);
+    defer changeDir(allocator, original_cwd) catch {};
 
     // Execute init command - should fail with AlreadyInWorkspace
     const args = &[_][]const u8{};
-    const result = init_commands.handleInit(allocator, args, false);
+    const result = init_commands.handleInit(io, allocator, args, false);
 
     try std.testing.expectError(CommandError.AlreadyInWorkspace, result);
 }
@@ -103,6 +115,7 @@ test "special_commands.handleInit: already in workspace error (parent directory)
     // The actual parent check logic is in handleInit_checkParentWorkspace().
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create unique temporary parent directory for test workspace
     const timestamp = utils.unixTimestamp();
@@ -110,20 +123,20 @@ test "special_commands.handleInit: already in workspace error (parent directory)
     const parent_dir = try std.fmt.bufPrint(&parent_dir_buf, "/tmp/gg_test_init_parent_{d}", .{timestamp});
 
     // Create parent directory with .gg
-    try std.fs.makeDirAbsolute(parent_dir);
-    defer std.fs.deleteTreeAbsolute(parent_dir) catch {};
+    try std.Io.Dir.createDirAbsolute(io, parent_dir, .default_dir);
+    defer std.Io.Dir.cwd().deleteTree(io, parent_dir) catch {};
 
     const parent_gg_dir = try std.fs.path.join(allocator, &[_][]const u8{ parent_dir, ".gg" });
     defer allocator.free(parent_gg_dir);
-    try std.fs.makeDirAbsolute(parent_gg_dir);
+    try std.Io.Dir.createDirAbsolute(io, parent_gg_dir, .default_dir);
 
     // Create child directory
     const child_dir = try std.fs.path.join(allocator, &[_][]const u8{ parent_dir, "child" });
     defer allocator.free(child_dir);
-    try std.fs.makeDirAbsolute(child_dir);
+    try std.Io.Dir.createDirAbsolute(io, child_dir, .default_dir);
 
     // Verify test setup: parent has .gg, child does not
-    std.fs.accessAbsolute(parent_gg_dir, .{}) catch |err| {
+    std.Io.Dir.accessAbsolute(io, parent_gg_dir, .{}) catch |err| {
         std.debug.print("Test setup failed: parent .gg not accessible: {any}\n", .{err});
         return err;
     };
@@ -138,6 +151,7 @@ test "special_commands.handleInit: json output mode" {
     // JSON mode is used by tools that parse gg output programmatically.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create unique temporary directory for test workspace
     const timestamp = utils.unixTimestamp();
@@ -145,18 +159,18 @@ test "special_commands.handleInit: json output mode" {
     const test_dir = try std.fmt.bufPrint(&test_dir_buf, "/tmp/gg_test_init_json_{d}", .{timestamp});
 
     // Create test directory
-    try std.fs.makeDirAbsolute(test_dir);
-    defer std.fs.deleteTreeAbsolute(test_dir) catch {};
+    try std.Io.Dir.createDirAbsolute(io, test_dir, .default_dir);
+    defer std.Io.Dir.cwd().deleteTree(io, test_dir) catch {};
 
     // Change to test directory for init
     const original_cwd = try std.process.getCwdAlloc(allocator);
     defer allocator.free(original_cwd);
-    try std.posix.chdir(test_dir);
-    defer std.posix.chdir(original_cwd) catch {};
+    try changeDir(allocator, test_dir);
+    defer changeDir(allocator, original_cwd) catch {};
 
     // Execute init command with JSON output enabled
     const args = &[_][]const u8{};
-    try init_commands.handleInit(allocator, args, true);
+    try init_commands.handleInit(io, allocator, args, true);
 
     // Note: JSON output goes to stdout and cannot be easily captured in tests.
     // This test verifies the command executes without error in JSON mode.
@@ -165,7 +179,7 @@ test "special_commands.handleInit: json output mode" {
     // Verify .gg directory and database were still created despite JSON mode
     const gg_dir = try std.fs.path.join(allocator, &[_][]const u8{ test_dir, ".gg" });
     defer allocator.free(gg_dir);
-    std.fs.accessAbsolute(gg_dir, .{}) catch |err| {
+    std.Io.Dir.accessAbsolute(io, gg_dir, .{}) catch |err| {
         std.debug.print("Failed to access .gg directory in JSON test: {any}\n", .{err});
         return err;
     };

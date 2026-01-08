@@ -29,10 +29,11 @@ test "integration: ready/blocked - initial state with dependencies" {
     //   D blocks_on B and C -> blocked initially
     //   E (no dependencies) -> ready always (independent)
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "ready_initial");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -80,10 +81,11 @@ test "integration: ready/blocked - blocker counts" {
     // Rationale: Test blocked query returns correct tasks with accurate blocker counts.
     // Validates that tasks are ordered by blocker_count DESC for bottleneck identification.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "blocked_counts");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -132,10 +134,11 @@ test "integration: ready/blocked - complete A transitions B and C to ready" {
     // Rationale: Test that completing a task unblocks its dependents.
     // Validates state transitions from blocked to ready as dependencies complete.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "complete_a");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -193,10 +196,11 @@ test "integration: ready/blocked - complete B and C transitions D to ready" {
     // Rationale: Test that completing multiple blockers unblocks downstream tasks.
     // Validates that tasks with multiple dependencies only become ready when all complete.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "complete_b_c");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -261,10 +265,11 @@ test "integration: ready/blocked - all complete returns empty" {
     // Rationale: Test that ready/blocked queries return empty when all tasks complete.
     // Also validates that ready query respects limit parameter correctly.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "all_complete");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();

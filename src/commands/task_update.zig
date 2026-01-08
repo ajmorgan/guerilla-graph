@@ -37,7 +37,7 @@ const UpdateArgs = struct {
 /// Command format: gg update <task-id> [--title <text>] [--description <text>] [--description-file <path>] [--status <status>]
 /// At least one optional flag must be provided.
 /// Note: Returns the raw parsed input - caller must resolve formatted IDs to internal IDs.
-pub fn parseUpdateArgs(allocator: std.mem.Allocator, arguments: []const []const u8) !struct {
+pub fn parseUpdateArgs(io: std.Io, allocator: std.mem.Allocator, arguments: []const []const u8) !struct {
     task_id_input: types.TaskIdInput,
     title: ?[]const u8,
     description: ?[]const u8,
@@ -88,9 +88,9 @@ pub fn parseUpdateArgs(allocator: std.mem.Allocator, arguments: []const []const 
                 return CommandError.MissingArgument;
             }
             const file_path = arguments[index + 1];
-            const cwd = std.fs.cwd();
+            const cwd = std.Io.Dir.cwd();
             const max_size = std.Io.Limit.limited(10 * 1024 * 1024); // 10MB max
-            description = try cwd.readFileAlloc(file_path, allocator, max_size);
+            description = try cwd.readFileAlloc(io, file_path, allocator, max_size);
             description_owned = true; // Allocated, must free
             index += 2;
         } else if (std.mem.eql(u8, argument, "--status")) {
@@ -139,6 +139,7 @@ pub fn parseUpdateArgs(allocator: std.mem.Allocator, arguments: []const []const 
 /// Rationale: Provides a general-purpose update command for modifying any task field.
 /// This is more flexible than separate commands for each field type.
 pub fn handleTaskUpdate(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -148,7 +149,7 @@ pub fn handleTaskUpdate(
     std.debug.assert(arguments.len >= 1);
 
     // Parse command arguments
-    const args = try parseUpdateArgs(allocator, arguments);
+    const args = try parseUpdateArgs(io, allocator, arguments);
     defer {
         if (args.description_owned and args.description != null) {
             allocator.free(args.description.?);
@@ -203,7 +204,7 @@ pub fn handleTaskUpdate(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

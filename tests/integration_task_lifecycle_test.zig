@@ -30,11 +30,12 @@ test "integration: task lifecycle - create, start, complete" {
     // are managed properly throughout the task lifecycle. Each transition is verified
     // with assertions on status fields and timestamp updates.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "task_lifecycle");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try storage.Storage.init(allocator, database_path);

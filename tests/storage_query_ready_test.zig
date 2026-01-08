@@ -13,13 +13,14 @@ test "getReadyTasks: returns ready tasks with plan_slug" {
     // Methodology: Create tasks with and without dependencies, verify
     // getReadyTasks returns only unblocked tasks with plan_slug populated.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_ready_tasks_with_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -59,13 +60,14 @@ test "getReadyTasks: respects limit parameter" {
     // Methodology: Create multiple ready tasks, verify limit parameter
     // constrains result set size.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_ready_tasks_limit.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -103,13 +105,14 @@ test "getReadyTasks: excludes tasks with incomplete dependencies" {
     // Methodology: Create dependency chain, verify only leaf nodes
     // (tasks with no dependencies) are returned as ready.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_ready_tasks_dependencies.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -138,13 +141,14 @@ test "getReadyTasks: excludes tasks with incomplete dependencies" {
 test "getReadyTasks: includes tasks after blocker is completed" {
     // Methodology: Complete blocking task, verify dependent task becomes ready.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_ready_tasks_after_completion.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -186,13 +190,14 @@ test "getReadyTasks: spans multiple plans" {
     // Methodology: Create ready tasks under different plans, verify
     // getReadyTasks returns tasks from all plans with correct plan_slug.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_ready_tasks_multiple_plans.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plans and tasks
     try storage.createPlan("auth", "Authentication", "", null);

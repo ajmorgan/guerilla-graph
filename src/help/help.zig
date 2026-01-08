@@ -11,7 +11,7 @@
 //!
 //! Usage:
 //!   const context = try determineContextFromArgs(parsed_args);
-//!   try displayHelp(context, allocator, json_output);
+//!   try displayHelp(io, context, allocator, json_output);
 
 const std = @import("std");
 const cli = @import("../cli.zig");
@@ -71,14 +71,14 @@ pub const HelpContext = enum {
 
 /// Display help text for the given context.
 /// Rationale: EXHAUSTIVE switch ensures compiler catches missing help pages.
-pub fn displayHelp(context: HelpContext, allocator: std.mem.Allocator, json_output: bool) !void {
+pub fn displayHelp(io: std.Io, context: HelpContext, allocator: std.mem.Allocator, json_output: bool) !void {
     // Rationale: Help is read-only, no storage needed
     _ = allocator;
     _ = json_output; // TODO: Phase 2 - JSON help output
 
     // Rationale: Get stdout writer for formatted output
     var stdout_buffer: [8192]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
     const stdout = &stdout_writer.interface;
 
     // Rationale: EXHAUSTIVE switch - compiler error if new context added without help

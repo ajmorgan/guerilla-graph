@@ -23,10 +23,11 @@ test "integration: flexible ID parsing - task new with dependencies" {
     //
     // Rationale: Dependencies are added via 'gg dep add' command, but programmatic API should support flexible formats.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_task_new_deps");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -84,10 +85,11 @@ test "integration: flexible ID parsing - task start command" {
     //
     // Rationale: Start command should work with any ID format for user convenience.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_task_start");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -135,10 +137,11 @@ test "integration: flexible ID parsing - task complete command" {
     //
     // Rationale: Bulk complete should accept mixed formats (e.g., "1 auth:002 3").
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_task_complete");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -200,10 +203,11 @@ test "integration: flexible ID parsing - task show command" {
     //
     // Rationale: Show command should accept same formats as smart routing show.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_task_show");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -243,10 +247,11 @@ test "integration: flexible ID parsing - task update command" {
     //
     // Rationale: Update command should accept same formats as smart routing update.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_task_update");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -289,10 +294,11 @@ test "integration: flexible ID parsing - task delete command" {
     //
     // Rationale: Delete command should accept all ID formats for consistency.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_task_delete");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();

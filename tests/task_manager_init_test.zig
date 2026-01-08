@@ -28,11 +28,12 @@ test "TaskManager: init and deinit" {
 
 test "TaskManager: createPlan delegates to storage" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary storage for testing
     const temp_path = "/tmp/test_task_manager_create_plan.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -59,11 +60,12 @@ test "TaskManager: createPlan delegates to storage" {
 
 test "TaskManager: createTask with no dependencies" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary storage for testing
     const temp_path = "/tmp/test_task_manager_create_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -86,10 +88,11 @@ test "TaskManager: createTask with no dependencies" {
 
 test "TaskManager: getPlan returns null for nonexistent plan" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_task_manager_get_plan.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -113,10 +116,11 @@ test "TaskManager: getPlan returns null for nonexistent plan" {
 
 test "TaskManager: getTask returns null for nonexistent task" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_task_manager_get_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();

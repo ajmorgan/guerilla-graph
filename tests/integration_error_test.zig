@@ -29,11 +29,12 @@ test "integration: error scenarios - task not found" {
     // (null return) and other errors (error return). This test ensures all operations
     // handle missing tasks consistently.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_not_found");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -74,11 +75,12 @@ test "integration: error scenarios - plan not found" {
     // Rationale: Labels must exist before tasks can be created under them.
     // Foreign key constraint should catch this and return InvalidData error.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_label_not_found");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -121,11 +123,12 @@ test "integration: error scenarios - invalid task IDs" {
     // Rationale: Task IDs must follow "plan:NNN" format. Invalid formats should be caught
     // early with user-friendly errors explaining the expected format.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_invalid_ids");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -166,11 +169,12 @@ test "integration: error scenarios - invalid label IDs" {
     // When implemented, these tests should fail with InvalidKebabCase errors.
     // For now, we document the expected validation rules.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_invalid_plan_ids");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -213,11 +217,12 @@ test "integration: error scenarios - direct cycle detection" {
     // Rationale: Direct cycles are the simplest case and must be caught immediately.
     // User-friendly error should explain the cycle: "A -> B -> A".
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_direct_cycle");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -257,11 +262,12 @@ test "integration: error scenarios - transitive cycle detection" {
     // Rationale: Transitive cycles are more complex and require recursive checking.
     // User-friendly error should show the cycle path: "A -> B -> C -> A".
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_transitive_cycle");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -316,11 +322,12 @@ test "integration: error scenarios - self-cycle prevention" {
     // This prevents us from testing the SQL CHECK constraint directly in debug builds.
     // In release builds, the CHECK constraint would catch this at database level.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_self_cycle");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -369,11 +376,12 @@ test "integration: error scenarios - delete task with dependents" {
     // 2. Return error if dependents exist
     // 3. Provide list of dependent tasks in error message
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_delete_with_deps");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -415,11 +423,12 @@ test "integration: error scenarios - delete non-existent dependency" {
     // Rationale: Users may try to remove dependencies that were never added or already removed.
     // Error message should clearly state that the dependency doesn't exist.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_remove_nonexistent");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);
@@ -467,11 +476,12 @@ test "integration: error scenarios - error message format verification" {
     // - InvalidKebabCase: "Label ID must be kebab-case (lowercase, hyphens)"
     // - InvalidInput: "Invalid input: [specific reason]"
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "error_messages");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage
     var test_storage = try storage.Storage.init(allocator, database_path);

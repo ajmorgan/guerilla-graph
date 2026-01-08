@@ -24,7 +24,7 @@ pub const CommandError = error{
 ///
 /// Rationale: Prevent nested workspaces (like git behavior).
 /// This ensures one workspace per directory hierarchy.
-fn handleInit_checkParentWorkspace(allocator: std.mem.Allocator) !bool {
+fn handleInit_checkParentWorkspace(io: std.Io, allocator: std.mem.Allocator) !bool {
     // Assertions: Validate inputs (Tiger Style: 2+ per function)
     std.debug.assert(@intFromPtr(allocator.vtable) != 0);
 
@@ -47,7 +47,7 @@ fn handleInit_checkParentWorkspace(allocator: std.mem.Allocator) !bool {
         defer allocator.free(gg_dir_path);
 
         // Try to access .gg directory
-        std.fs.accessAbsolute(gg_dir_path, .{}) catch |err| {
+        std.Io.Dir.accessAbsolute(io, gg_dir_path, .{}) catch |err| {
             if (err == error.FileNotFound) {
                 // Move to parent directory
                 const parent = std.fs.path.dirname(search_path) orelse {
@@ -74,6 +74,7 @@ fn handleInit_checkParentWorkspace(allocator: std.mem.Allocator) !bool {
 /// Initialize workspace directory and database.
 /// Rationale: Extracted from handleInit to reduce function length.
 fn handleInit_initializeWorkspace(
+    io: std.Io,
     allocator: std.mem.Allocator,
     current_dir: []const u8,
     gg_dir_path: []const u8,
@@ -84,7 +85,7 @@ fn handleInit_initializeWorkspace(
     std.debug.assert(gg_dir_path.len > 0);
 
     // Create .gg directory
-    std.fs.makeDirAbsolute(gg_dir_path) catch |err| {
+    std.Io.Dir.createDirAbsolute(io, gg_dir_path, .default_dir) catch |err| {
         if (err == error.PathAlreadyExists and !force_init) {
             return CommandError.AlreadyInWorkspace;
         }
@@ -108,7 +109,7 @@ fn handleInit_initializeWorkspace(
 /// Command: gg init [--force]
 /// Example: gg init
 /// Example: gg init --force    # Remove existing workspace and reinitialize
-pub fn handleInit(allocator: std.mem.Allocator, arguments: []const []const u8, json_output: bool) !void {
+pub fn handleInit(io: std.Io, allocator: std.mem.Allocator, arguments: []const []const u8, json_output: bool) !void {
     // Assertions: Validate inputs (Tiger Style: 2+ per function)
     std.debug.assert(@intFromPtr(allocator.vtable) != 0);
 
@@ -131,7 +132,8 @@ pub fn handleInit(allocator: std.mem.Allocator, arguments: []const []const u8, j
     // Rationale: If --force flag provided, remove existing workspace.
     // This allows reinitialization without manual cleanup.
     if (force_init) {
-        std.fs.deleteTreeAbsolute(gg_dir_path) catch |err| {
+        const cwd = std.Io.Dir.cwd();
+        cwd.deleteTree(io, ".gg") catch |err| {
             // Rationale: Ignore FileNotFound - directory doesn't exist, which is fine.
             if (err != error.FileNotFound) {
                 return err;
@@ -144,7 +146,7 @@ pub fn handleInit(allocator: std.mem.Allocator, arguments: []const []const u8, j
         // which has .gg. The parent check behavior is tested explicitly in
         // "already in workspace error (parent directory)" test with controlled setup.
         if (!builtin.is_test) {
-            const in_workspace = try handleInit_checkParentWorkspace(allocator);
+            const in_workspace = try handleInit_checkParentWorkspace(io, allocator);
             if (in_workspace) {
                 return CommandError.AlreadyInWorkspace;
             }
@@ -152,15 +154,15 @@ pub fn handleInit(allocator: std.mem.Allocator, arguments: []const []const u8, j
     }
 
     // Initialize workspace directory and database
-    try handleInit_initializeWorkspace(allocator, current_dir, gg_dir_path, force_init);
+    try handleInit_initializeWorkspace(io, allocator, current_dir, gg_dir_path, force_init);
 
     // Postcondition: Workspace directory exists after initialization
-    std.fs.accessAbsolute(gg_dir_path, .{}) catch unreachable;
+    std.Io.Dir.accessAbsolute(io, gg_dir_path, .{}) catch unreachable;
 
     // Output success message
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

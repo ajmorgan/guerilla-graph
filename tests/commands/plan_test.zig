@@ -28,16 +28,17 @@ const cleanupDatabaseFile = test_utils.cleanupDatabaseFile;
 test "plan_commands.handlePlanNew: successful creation" {
     // Methodology: Verify label can be created with required fields.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_new_success");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{ "auth", "--title", "Authentication" };
-    try plan_commands.handlePlanNew(allocator, args, false, &storage);
+    try plan_commands.handlePlanNew(io, allocator, args, false, &storage);
 
     // Verify label was created
     const label = try storage.getPlanSummary("auth");
@@ -56,16 +57,17 @@ test "plan_commands.handlePlanNew: successful creation" {
 test "plan_commands.handlePlanNew: with description" {
     // Methodology: Verify description is stored correctly.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_new_desc");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{ "tech-debt", "--title", "Technical Debt", "--description", "Refactoring tasks" };
-    try plan_commands.handlePlanNew(allocator, args, false, &storage);
+    try plan_commands.handlePlanNew(io, allocator, args, false, &storage);
 
     const label = try storage.getPlanSummary("tech-debt");
     defer {
@@ -82,16 +84,17 @@ test "plan_commands.handlePlanNew: with description" {
 test "plan_commands.handlePlanNew: title is optional" {
     // Methodology: Verify plan can be created without --title flag (defaults to empty).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_new_no_title");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{"auth"};
-    try plan_commands.handlePlanNew(allocator, args, false, &storage);
+    try plan_commands.handlePlanNew(io, allocator, args, false, &storage);
 
     // Verify plan was created with empty title
     const label = try storage.getPlanSummary("auth");
@@ -110,16 +113,17 @@ test "plan_commands.handlePlanNew: title is optional" {
 test "plan_commands.handlePlanNew: invalid kebab-case ID" {
     // Methodology: Verify kebab-case validation rejects uppercase/invalid chars.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_new_invalid_id");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{ "Auth_Module", "--title", "Authentication" };
-    const result = plan_commands.handlePlanNew(allocator, args, false, &storage);
+    const result = plan_commands.handlePlanNew(io, allocator, args, false, &storage);
 
     try std.testing.expectError(error.InvalidKebabCase, result);
 }
@@ -127,16 +131,17 @@ test "plan_commands.handlePlanNew: invalid kebab-case ID" {
 test "plan_commands.handlePlanNew: json output mode" {
     // Methodology: Verify JSON output mode executes without error.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_new_json");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{ "api", "--title", "API Development" };
-    try plan_commands.handlePlanNew(allocator, args, true, &storage);
+    try plan_commands.handlePlanNew(io, allocator, args, true, &storage);
 }
 
 // ============================================================================
@@ -146,10 +151,11 @@ test "plan_commands.handlePlanNew: json output mode" {
 test "plan_commands.handlePlanShow: display existing label" {
     // Methodology: Verify label details are displayed correctly.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_show_success");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -158,22 +164,23 @@ test "plan_commands.handlePlanShow: display existing label" {
     try storage.createPlan("auth", "Authentication", "User login and permissions", null);
 
     const args = &[_][]const u8{"auth"};
-    try plan_commands.handlePlanShow(allocator, args, false, &storage);
+    try plan_commands.handlePlanShow(io, allocator, args, false, &storage);
 }
 
 test "plan_commands.handlePlanShow: label not found" {
     // Methodology: Verify error when label doesn't exist.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_show_not_found");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{"nonexistent"};
-    const result = plan_commands.handlePlanShow(allocator, args, false, &storage);
+    const result = plan_commands.handlePlanShow(io, allocator, args, false, &storage);
 
     try std.testing.expectError(CommandError.PlanNotFound, result);
 }
@@ -181,16 +188,17 @@ test "plan_commands.handlePlanShow: label not found" {
 test "plan_commands.handlePlanShow: missing label ID argument" {
     // Methodology: Verify error when label ID is not provided.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_show_no_arg");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{};
-    const result = plan_commands.handlePlanShow(allocator, args, false, &storage);
+    const result = plan_commands.handlePlanShow(io, allocator, args, false, &storage);
 
     try std.testing.expectError(CommandError.MissingArgument, result);
 }
@@ -202,25 +210,27 @@ test "plan_commands.handlePlanShow: missing label ID argument" {
 test "plan_commands.handlePlanList: empty database" {
     // Methodology: Verify list command works with no labels.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_list_empty");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{};
-    try plan_commands.handlePlanList(allocator, args, false, &storage);
+    try plan_commands.handlePlanList(io, allocator, args, false, &storage);
 }
 
 test "plan_commands.handlePlanList: multiple labels" {
     // Methodology: Verify list displays multiple labels.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_list_multiple");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -231,16 +241,17 @@ test "plan_commands.handlePlanList: multiple labels" {
     try storage.createPlan("ui", "User Interface", "Frontend work", null);
 
     const args = &[_][]const u8{};
-    try plan_commands.handlePlanList(allocator, args, false, &storage);
+    try plan_commands.handlePlanList(io, allocator, args, false, &storage);
 }
 
 test "plan_commands.handlePlanList: json output mode" {
     // Methodology: Verify JSON output executes without error.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_list_json");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -248,7 +259,7 @@ test "plan_commands.handlePlanList: json output mode" {
     try storage.createPlan("test", "Test Label", "", null);
 
     const args = &[_][]const u8{};
-    try plan_commands.handlePlanList(allocator, args, true, &storage);
+    try plan_commands.handlePlanList(io, allocator, args, true, &storage);
 }
 
 // ============================================================================
@@ -260,10 +271,11 @@ test "plan_commands.handlePlanUpdate: update title" {
     // Rationale: Command handlers include output logic that blocks in tests.
     // This tests the underlying functionality without the output layer.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_update_title");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -288,10 +300,11 @@ test "plan_commands.handlePlanUpdate: update title" {
 test "plan_commands.handlePlanUpdate: update description" {
     // Methodology: Test storage layer directly.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_update_desc");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -324,10 +337,11 @@ test "plan_commands.handlePlanUpdate: missing update flags" {
 test "plan_commands.handlePlanUpdate: label not found" {
     // Methodology: Test storage layer error handling.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_update_not_found");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -345,10 +359,11 @@ test "plan_commands.handlePlanUpdate: label not found" {
 test "plan_commands.handlePlanDelete: successful deletion" {
     // Methodology: Verify label can be deleted.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_delete_success");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -356,7 +371,7 @@ test "plan_commands.handlePlanDelete: successful deletion" {
     try storage.createPlan("temp", "Temporary", "", null);
 
     const args = &[_][]const u8{"temp"};
-    try plan_commands.handlePlanDelete(args, false, &storage);
+    try plan_commands.handlePlanDelete(io, args, false, &storage);
 
     // Verify label is deleted
     const result = try storage.getPlanSummary("temp");
@@ -366,16 +381,17 @@ test "plan_commands.handlePlanDelete: successful deletion" {
 test "plan_commands.handlePlanDelete: label not found" {
     // Methodology: Verify error when deleting non-existent label.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_delete_not_found");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{"nonexistent"};
-    const result = plan_commands.handlePlanDelete(args, false, &storage);
+    const result = plan_commands.handlePlanDelete(io, args, false, &storage);
 
     try std.testing.expectError(guerilla_graph.storage.SqliteError.InvalidData, result);
 }
@@ -383,16 +399,17 @@ test "plan_commands.handlePlanDelete: label not found" {
 test "plan_commands.handlePlanDelete: missing label ID" {
     // Methodology: Verify error when label ID is not provided.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "label_delete_no_arg");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{};
-    const result = plan_commands.handlePlanDelete(args, false, &storage);
+    const result = plan_commands.handlePlanDelete(io, args, false, &storage);
 
     try std.testing.expectError(CommandError.MissingArgument, result);
 }
@@ -403,15 +420,19 @@ test "plan_commands.handlePlanDelete: missing label ID" {
 
 test "parsePlanNewArgs - description-file reads file and tracks ownership" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_file = "test_plan_new.md";
-    try std.fs.cwd().writeFile(.{ .sub_path = temp_file, .data = "Plan specification" });
-    defer std.fs.cwd().deleteFile(temp_file) catch {};
+    const file = try std.Io.Dir.cwd().createFile(io, temp_file, .{});
+    const content = "Plan specification";
+    try file.writePositionalAll(io, content, 0);
+    file.close(io);
+    defer std.Io.Dir.cwd().deleteFile(io, temp_file) catch {};
 
     const args_input = &[_][]const u8{
         "auth", "--title", "Authentication", "--description-file", temp_file,
     };
-    const args = try plan_commands.parsePlanNewArgs(allocator, args_input);
+    const args = try plan_commands.parsePlanNewArgs(io, allocator, args_input);
     defer {
         if (args.description_owned) allocator.free(args.description);
     }
@@ -422,15 +443,19 @@ test "parsePlanNewArgs - description-file reads file and tracks ownership" {
 
 test "parsePlanUpdateArgs - description-file reads file and tracks ownership" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_file = "test_plan_update.md";
-    try std.fs.cwd().writeFile(.{ .sub_path = temp_file, .data = "Revised plan" });
-    defer std.fs.cwd().deleteFile(temp_file) catch {};
+    const file = try std.Io.Dir.cwd().createFile(io, temp_file, .{});
+    const content = "Revised plan";
+    try file.writePositionalAll(io, content, 0);
+    file.close(io);
+    defer std.Io.Dir.cwd().deleteFile(io, temp_file) catch {};
 
     const args_input = &[_][]const u8{
         "auth", "--description-file", temp_file,
     };
-    const args = try plan_commands.parsePlanUpdateArgs(allocator, args_input);
+    const args = try plan_commands.parsePlanUpdateArgs(io, allocator, args_input);
     defer {
         if (args.description_owned and args.description != null) {
             allocator.free(args.description.?);

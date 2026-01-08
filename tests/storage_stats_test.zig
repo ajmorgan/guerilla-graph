@@ -8,13 +8,14 @@ const Storage = guerilla_graph.storage.Storage;
 
 test "getSystemStats: comprehensive statistics" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_system_stats.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create two labels
     try storage.createPlan("auth", "Authentication", "Auth system", null);
@@ -60,13 +61,14 @@ test "getSystemStats: comprehensive statistics" {
 
 test "getSystemStats: empty database" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_system_stats_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Get statistics from empty database
     const stats = try storage.getSystemStats();
@@ -87,13 +89,14 @@ test "getSystemStats: empty database" {
 
 test "getSystemStats: blocked tasks count" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_system_stats_blocked.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 

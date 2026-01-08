@@ -69,6 +69,7 @@ pub fn parseListArgs(arguments: []const []const u8) !ListArgs {
 /// Rationale: Provides filtered view of all tasks (unlike `gg ready` which shows
 /// only unblocked tasks). Excludes descriptions for performance.
 pub fn handleTaskList(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -92,7 +93,7 @@ pub fn handleTaskList(
     // Rationale: Format output (show_plan=true for cross-plan context)
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
         if (json_output) {
             try format.formatTaskListJson(allocator, stdout, tasks);

@@ -16,13 +16,10 @@ const workflow_commands = gg.workflow_commands;
 const init_commands = gg.init_commands;
 const help_commands = gg.help_commands;
 
-pub fn main() !void {
-    mainImpl() catch |err| {
-        // Rationale: stderr writer pattern duplicated at line 149-151.
-        // Intentional DRY exception - both are in error paths with different contexts.
-        // Extracting would require complex BufferedWriter return type for minimal benefit.
-        var stderr_buffer: [2048]u8 = undefined;
-        var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+pub fn main(init: std.process.Init) !void {
+    mainImpl(init) catch |err| {
+        var stderr_buffer: [4096]u8 = undefined;
+        var stderr_writer = std.Io.File.stderr().writer(init.io, stderr_buffer[0..]);
         const stderr = &stderr_writer.interface;
 
         // Print user-friendly error message based on error type
@@ -95,20 +92,17 @@ pub fn main() !void {
             try stderr.print("Run 'gg help' for usage information, or 'gg <command> --help' for command-specific help.\n", .{});
             try stderr.print("Run 'gg doctor' to check workspace health.\n", .{});
         }
-        try stderr.flush();
         std.process.exit(1);
     };
 }
 
-fn mainImpl() !void {
-    // Get allocator for argument parsing and operations
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+fn mainImpl(init: std.process.Init) !void {
+    // Use allocators from init struct (new Zig API)
+    const allocator = init.gpa;
+    const arena = init.arena.allocator();
 
-    // Get command line arguments
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    // Get command line arguments using arena allocator
+    const args = try init.minimal.args.toSlice(arena);
 
     // Check for --help flag early with context awareness
     const help_system = gg.help;
@@ -142,15 +136,15 @@ fn mainImpl() !void {
                 break :blk try help_system.determineContextFromArgs(parsed_args);
             };
 
-            try help_system.displayHelp(help_context, allocator, false);
+            try help_system.displayHelp(init.io, help_context, allocator, false);
             return;
         }
     }
 
     // Parse command line arguments
     var parsed_args = cli.parseArgs(allocator, args) catch |err| {
-        var stderr_buffer: [2048]u8 = undefined;
-        var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+        var stderr_buffer: [4096]u8 = undefined;
+        var stderr_writer = std.Io.File.stderr().writer(init.io, stderr_buffer[0..]);
         const stderr = &stderr_writer.interface;
         switch (err) {
             error.UnknownResource => {
@@ -162,13 +156,11 @@ fn mainImpl() !void {
                 try stderr.print("\nRun 'gg help' to see all available commands.\n", .{});
                 try stderr.print("Valid resources: plan, task, dep, query\n", .{});
                 try stderr.print("Common shortcuts: ready, blocked, workflow, init, doctor, help\n", .{});
-                try stderr.flush();
                 std.process.exit(1);
             },
             error.UnknownAction, error.MissingAction => {
                 try stderr.print("Error: {s}\n", .{@errorName(err)});
                 try stderr.print("\nRun 'gg help' to see all available commands.\n", .{});
-                try stderr.flush();
                 std.process.exit(1);
             },
             else => return err,
@@ -179,22 +171,22 @@ fn mainImpl() !void {
     // Commands that don't require Storage/TaskManager (early exit for efficiency)
     switch (parsed_args.command) {
         .help => {
-            try help_commands.handleHelp(allocator, parsed_args.json_output);
+            try help_commands.handleHelp(init.io, allocator, parsed_args.json_output);
             return;
         },
         .workflow => {
-            try workflow_commands.handleWorkflow(allocator, parsed_args.json_output);
+            try workflow_commands.handleWorkflow(init.io, allocator, parsed_args.json_output);
             return;
         },
         .init => {
-            try init_commands.handleInit(allocator, parsed_args.arguments, parsed_args.json_output);
+            try init_commands.handleInit(init.io, allocator, parsed_args.arguments, parsed_args.json_output);
             return;
         },
         else => {}, // Continue to workspace discovery and storage initialization
     }
 
     // Discover workspace by walking up directory tree to find .gg directory
-    const workspace_root = try discoverWorkspace(allocator);
+    const workspace_root = try discoverWorkspace(init.io, allocator);
     defer allocator.free(workspace_root);
     // Assertion: Workspace root must be non-empty valid path.
     std.debug.assert(workspace_root.len > 0);
@@ -215,35 +207,35 @@ fn mainImpl() !void {
     switch (parsed_args.command) {
         .plan => |action| {
             switch (action) {
-                .new => try plan_commands.handlePlanNew(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .show => try plan_commands.handlePlanShow(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .ls => try plan_commands.handlePlanList(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .update => try plan_commands.handlePlanUpdate(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .delete => try plan_commands.handlePlanDelete(parsed_args.arguments, parsed_args.json_output, &storage),
+                .new => try plan_commands.handlePlanNew(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .show => try plan_commands.handlePlanShow(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .ls => try plan_commands.handlePlanList(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .update => try plan_commands.handlePlanUpdate(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .delete => try plan_commands.handlePlanDelete(init.io, parsed_args.arguments, parsed_args.json_output, &storage),
             }
         },
         .task => |action| {
             switch (action) {
-                .new => try task_commands.handleTaskNew(allocator, parsed_args.arguments, parsed_args.json_output, &storage, &task_manager),
-                .show => try task_commands.handleTaskShow(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .ls => try task_commands.handleTaskList(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .start => try task_commands.handleTaskStart(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .complete => try task_commands.handleTaskComplete(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .update => try task_commands.handleTaskUpdate(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .delete => try task_commands.handleTaskDelete(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .new => try task_commands.handleTaskNew(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage, &task_manager),
+                .show => try task_commands.handleTaskShow(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .ls => try task_commands.handleTaskList(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .start => try task_commands.handleTaskStart(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .complete => try task_commands.handleTaskComplete(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .update => try task_commands.handleTaskUpdate(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .delete => try task_commands.handleTaskDelete(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
             }
         },
         .dep => |action| {
             switch (action) {
-                .add => try dep_commands.handleDepAdd(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .remove => try dep_commands.handleDepRemove(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .blockers => try dep_commands.handleDepBlockers(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-                .dependents => try dep_commands.handleDepDependents(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .add => try dep_commands.handleDepAdd(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .remove => try dep_commands.handleDepRemove(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .blockers => try dep_commands.handleDepBlockers(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+                .dependents => try dep_commands.handleDepDependents(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
             }
         },
-        .ready => try ready_commands.handleQueryReady(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-        .blocked => try blocked_commands.handleQueryBlocked(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
-        .ls => try list_commands.handleQueryList(allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+        .ready => try ready_commands.handleQueryReady(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+        .blocked => try blocked_commands.handleQueryBlocked(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
+        .ls => try list_commands.handleQueryList(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage),
         .show => {
             // Smart show: detect task vs plan by trying to parse as task ID
             if (parsed_args.arguments.len < 1) {
@@ -252,11 +244,11 @@ fn mainImpl() !void {
             const id = parsed_args.arguments[0];
 
             _ = gg.utils.parseTaskIdFlexible(id) catch {
-                try plan_commands.handlePlanShow(allocator, parsed_args.arguments, parsed_args.json_output, &storage);
+                try plan_commands.handlePlanShow(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage);
                 return;
             };
 
-            try task_commands.handleTaskShow(allocator, parsed_args.arguments, parsed_args.json_output, &storage);
+            try task_commands.handleTaskShow(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage);
         },
         .update => {
             // Smart update: detect task vs plan by trying to parse as task ID
@@ -266,11 +258,11 @@ fn mainImpl() !void {
             const id = parsed_args.arguments[0];
 
             _ = gg.utils.parseTaskIdFlexible(id) catch {
-                try plan_commands.handlePlanUpdate(allocator, parsed_args.arguments, parsed_args.json_output, &storage);
+                try plan_commands.handlePlanUpdate(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage);
                 return;
             };
 
-            try task_commands.handleTaskUpdate(allocator, parsed_args.arguments, parsed_args.json_output, &storage);
+            try task_commands.handleTaskUpdate(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage);
         },
         .new => {
             if (parsed_args.arguments.len < 1) return error.MissingArgument;
@@ -295,15 +287,15 @@ fn mainImpl() !void {
                     try new_args.append(allocator, arg);
                 }
 
-                try task_commands.handleTaskNew(allocator, new_args.items, parsed_args.json_output, &storage, &task_manager);
+                try task_commands.handleTaskNew(init.io, allocator, new_args.items, parsed_args.json_output, &storage, &task_manager);
             } else {
                 // Plan creation
                 try gg.utils.validateKebabCase(first_arg);
-                try plan_commands.handlePlanNew(allocator, parsed_args.arguments, parsed_args.json_output, &storage);
+                try plan_commands.handlePlanNew(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage);
             }
         },
         .doctor => {
-            try doctor_commands.handleDoctor(allocator, parsed_args.arguments, parsed_args.json_output, &storage);
+            try doctor_commands.handleDoctor(init.io, allocator, parsed_args.arguments, parsed_args.json_output, &storage);
         },
         .workflow, .help, .init => unreachable, // Already handled above
     }
@@ -315,7 +307,7 @@ fn mainImpl() !void {
 /// Rationale: Similar to git, we walk up from current directory looking for .gg/
 /// This allows running gg commands from any subdirectory within a workspace.
 /// Tiger Style: Full names, 2+ assertions, rationale comments.
-pub fn discoverWorkspace(allocator: std.mem.Allocator) ![]const u8 {
+pub fn discoverWorkspace(io: std.Io, allocator: std.mem.Allocator) ![]const u8 {
     // Assertions: Validate inputs (Tiger Style: 2+ per function)
     std.debug.assert(@intFromPtr(allocator.vtable) != 0);
 
@@ -338,7 +330,7 @@ pub fn discoverWorkspace(allocator: std.mem.Allocator) ![]const u8 {
         defer allocator.free(gg_dir_path);
 
         // Try to access .gg directory (check if it exists and is accessible)
-        std.fs.accessAbsolute(gg_dir_path, .{}) catch |err| {
+        std.Io.Dir.accessAbsolute(io, gg_dir_path, .{}) catch |err| {
             if (err == error.FileNotFound) {
                 // Move to parent directory
                 const parent = std.fs.path.dirname(search_path) orelse {

@@ -124,7 +124,14 @@ LOOP while iteration < max_iterations:
   Step 3: Launch Parallel Audit Agents (CRITICAL)
     Print: "🔍 Iteration {iteration}/{max_iterations}: Auditing {count} tasks..."
 
-    # CRITICAL: Use SINGLE message with multiple Task tool calls (NOT sequential)
+    # ⚠️ CRITICAL: ONE AGENT PER TASK
+    # DO NOT bundle multiple tasks into a single agent - this blows context windows!
+    # Each task gets its own dedicated agent with focused context.
+    #
+    # ✅ Correct:  23 tasks → 23 agents (one per task)
+    # ❌ Wrong:    23 tasks → 4 agents (bundled 5-6 tasks each)
+
+    # PARALLEL EXECUTION: Emit ALL Task calls in ONE assistant message
     For EACH task in tasks:
       prompt = Read(".claude/commands/_prompts/audit-task.md")
       Fill template variables:
@@ -134,11 +141,12 @@ LOOP while iteration < max_iterations:
 
       Task(subagent_type="general-purpose", prompt=prompt)
 
-    # PARALLEL EXECUTION: Emit ALL Task calls in ONE assistant message
+    # Launch pattern: Single message → [Task1, Task2, Task3, ...TaskN] → parallel execution
     # See control-flow.md "Parallel Agent Spawning" for details
     #
-    # Correct:  Single message → [Task1, Task2, Task3] → parallel execution
+    # Correct:  Single message with N Task tool calls (one per task)
     # Incorrect: Message1 → Task1 → wait → Message2 → Task2 → wait (sequential)
+    # Incorrect: Bundling multiple tasks into fewer agents (context overflow)
 
     Wait for ALL agent responses → audit_results array
 
@@ -422,11 +430,12 @@ Wave 2 (after Wave 1): {list of task IDs blocked by Wave 1}
 
 1. **PLAN.md REQUIRED**: Command will not execute without it
 2. **User setup required**: Must confirm ready, choose auto-fix and auto-continue preferences
-3. **CRITICAL: Parallel agent launches in SINGLE message** (multiple Task tool calls)
-4. **Sequential iterations**: Complete iteration fully before next
-5. **Centralized updates**: Main orchestrator makes ALL task updates (agents only report)
-6. **Max 5 iterations**: Hard stop to prevent infinite loops
-7. **Convergence checks**: Content-based (task states unchanged) AND quality-based (0 Critical, 0 High, ≤2 Medium)
-8. **Error tolerance**: Individual fix failures don't stop entire process
-9. **User pause**: Respects auto-continue=no preference (pauses between iterations)
+3. **⚠️ ONE AGENT PER TASK**: Never bundle multiple tasks into a single agent (blows context window)
+4. **Parallel agent launches in SINGLE message**: N tasks = N Task tool calls in one message
+5. **Sequential iterations**: Complete iteration fully before next
+6. **Centralized updates**: Main orchestrator makes ALL task updates (agents only report)
+7. **Max 5 iterations**: Hard stop to prevent infinite loops
+8. **Convergence checks**: Content-based (task states unchanged) AND quality-based (0 Critical, 0 High, ≤2 Medium)
+9. **Error tolerance**: Individual fix failures don't stop entire process
+10. **User pause**: Respects auto-continue=no preference (pauses between iterations)
 

@@ -292,33 +292,35 @@ test "parseTaskInput - invalid input" {
 
 test "description-file respects size limit" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create file larger than limit
     const temp_file = "test_large.md";
-    var file = try std.fs.cwd().createFile(temp_file, .{});
-    defer std.fs.cwd().deleteFile(temp_file) catch {};
+    const file = try std.Io.Dir.cwd().createFile(io, temp_file, .{});
+    defer std.Io.Dir.cwd().deleteFile(io, temp_file) catch {};
 
     // Write 11MB of data (exceeds 10MB limit)
     var buffer: [1024]u8 = undefined;
     @memset(&buffer, 'A');
     var i: usize = 0;
     while (i < 11 * 1024) : (i += 1) {
-        try file.writeAll(&buffer);
+        try file.writePositionalAll(io, &buffer, i * 1024);
     }
-    file.close();
+    file.close(io);
 
     // Attempt to read (should fail)
-    const cwd = std.fs.cwd();
+    const cwd = std.Io.Dir.cwd();
     const max_size = std.Io.Limit.limited(10 * 1024 * 1024);
-    const result = cwd.readFileAlloc(temp_file, allocator, max_size);
+    const result = cwd.readFileAlloc(io, temp_file, allocator, max_size);
 
     try std.testing.expectError(error.StreamTooLong, result);
 }
 
 test "description-file handles missing file" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const max_size = std.Io.Limit.limited(10 * 1024 * 1024);
-    const result = std.fs.cwd().readFileAlloc("nonexistent.md", allocator, max_size);
+    const result = std.Io.Dir.cwd().readFileAlloc(io, "nonexistent.md", allocator, max_size);
     try std.testing.expectError(error.FileNotFound, result);
 }

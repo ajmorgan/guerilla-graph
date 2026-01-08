@@ -15,13 +15,14 @@ test "listTasks: returns tasks with plan_slug populated" {
     // Methodology: Create tasks under multiple plans, list all tasks,
     // verify plan_slug is correctly populated from JOIN.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_with_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plans and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -62,13 +63,14 @@ test "listTasks: filter by status" {
     // Methodology: Create tasks with different statuses, filter by status,
     // verify only matching tasks are returned.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_filter_status.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -124,13 +126,14 @@ test "listTasks: filter by plan slug" {
     // Methodology: Create tasks under multiple plans, filter by plan slug,
     // verify only tasks from that plan are returned.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_filter_plan.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plans and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -171,13 +174,14 @@ test "listTasks: filter by both status and plan" {
     // Methodology: Create tasks under multiple plans with different statuses,
     // filter by both status and plan, verify correct subset is returned.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_filter_both.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plans and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -210,13 +214,14 @@ test "listTasks: filter by both status and plan" {
 test "listTasks: empty result for nonexistent plan" {
     // Methodology: Filter by nonexistent plan slug, verify empty array is returned.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_empty_result.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);
@@ -233,13 +238,14 @@ test "listTasks: sorting by created_at ascending" {
     // Methodology: Create tasks in random order, verify listTasks returns
     // them sorted by created_at (oldest first).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_sorting.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plans in specific order
     try storage.createPlan("auth", "Authentication", "", null);

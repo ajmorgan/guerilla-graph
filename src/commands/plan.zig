@@ -53,7 +53,7 @@ const PlanNewArgs = struct {
 
 /// Parse plan new command arguments
 /// Command format: gg plan new <id> --title <text> [--description <text>] [--description-file <path>]
-pub fn parsePlanNewArgs(allocator: std.mem.Allocator, arguments: []const []const u8) !PlanNewArgs {
+pub fn parsePlanNewArgs(io: std.Io, allocator: std.mem.Allocator, arguments: []const []const u8) !PlanNewArgs {
     // Assertions: Validate inputs
 
     // Rationale: First argument is the plan ID (positional argument).
@@ -109,9 +109,9 @@ pub fn parsePlanNewArgs(allocator: std.mem.Allocator, arguments: []const []const
                 allocator.free(description);
             }
             const file_path = arguments[index + 1];
-            const cwd = std.fs.cwd();
+            const cwd = std.Io.Dir.cwd();
             const max_size = std.Io.Limit.limited(10 * 1024 * 1024); // 10MB max
-            description = try cwd.readFileAlloc(file_path, allocator, max_size);
+            description = try cwd.readFileAlloc(io, file_path, allocator, max_size);
             description_owned = true; // Allocated, must free
             index += 2;
         } else if (std.mem.eql(u8, argument, "--created-at")) {
@@ -159,6 +159,7 @@ pub fn parsePlanNewArgs(allocator: std.mem.Allocator, arguments: []const []const
 /// Rationale: Renamed from handleCreatePlan to fit resource-action CLI pattern.
 /// This command creates a plan with validation of kebab-case ID and title length.
 pub fn handlePlanNew(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -168,7 +169,7 @@ pub fn handlePlanNew(
     std.debug.assert(arguments.len >= 1);
 
     // Parse command arguments
-    const args = try parsePlanNewArgs(allocator, arguments);
+    const args = try parsePlanNewArgs(io, allocator, arguments);
     defer {
         if (args.description_owned) {
             allocator.free(args.description);
@@ -193,7 +194,7 @@ pub fn handlePlanNew(
     // Format and display (skip in test mode to avoid stdout buffering issues)
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {
@@ -220,6 +221,7 @@ pub fn handlePlanNew(
 /// Shows plan details with aggregated task counts, allowing users to quickly
 /// understand the status of a plan without listing all tasks.
 pub fn handlePlanShow(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -247,7 +249,7 @@ pub fn handlePlanShow(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {
@@ -310,6 +312,7 @@ pub fn parsePlanListArgs(arguments: []const []const u8) !?types.TaskStatus {
 /// counts and computed status. The --status filter allows users to focus on
 /// completed vs incomplete features.
 pub fn handlePlanList(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -330,7 +333,7 @@ pub fn handlePlanList(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {
@@ -358,7 +361,7 @@ const PlanUpdateArgs = struct {
 /// Parse plan update command arguments
 /// Command format: gg plan update <id> [--title <text>] [--description <text>] [--description-file <path>]
 /// At least one optional flag must be provided.
-pub fn parsePlanUpdateArgs(allocator: std.mem.Allocator, arguments: []const []const u8) !PlanUpdateArgs {
+pub fn parsePlanUpdateArgs(io: std.Io, allocator: std.mem.Allocator, arguments: []const []const u8) !PlanUpdateArgs {
     // Rationale: First argument is the plan ID (positional argument).
     // User provides this directly without a flag (e.g., "auth").
     if (arguments.len == 0) {
@@ -410,9 +413,9 @@ pub fn parsePlanUpdateArgs(allocator: std.mem.Allocator, arguments: []const []co
                 allocator.free(description.?);
             }
             const file_path = arguments[index + 1];
-            const cwd = std.fs.cwd();
+            const cwd = std.Io.Dir.cwd();
             const max_size = std.Io.Limit.limited(10 * 1024 * 1024); // 10MB max
-            description = try cwd.readFileAlloc(file_path, allocator, max_size);
+            description = try cwd.readFileAlloc(io, file_path, allocator, max_size);
             description_owned = true; // Allocated, must free
             index += 2;
         } else {
@@ -451,6 +454,7 @@ pub fn parsePlanUpdateArgs(allocator: std.mem.Allocator, arguments: []const []co
 /// Rationale: Provides a general-purpose update command for modifying plan fields.
 /// This is more flexible than separate commands for each field type.
 pub fn handlePlanUpdate(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -460,7 +464,7 @@ pub fn handlePlanUpdate(
     std.debug.assert(arguments.len >= 1);
 
     // Parse command arguments
-    const args = try parsePlanUpdateArgs(allocator, arguments);
+    const args = try parsePlanUpdateArgs(io, allocator, arguments);
     defer {
         if (args.description_owned and args.description != null) {
             allocator.free(args.description.?);
@@ -488,7 +492,7 @@ pub fn handlePlanUpdate(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {
@@ -519,6 +523,7 @@ pub fn handlePlanUpdate(
 /// permanently removed along with their dependencies. This provides a clean
 /// way to remove entire feature branches. Deletion is atomic (transaction-wrapped).
 pub fn handlePlanDelete(
+    io: std.Io,
     arguments: []const []const u8,
     json_output: bool,
     storage: *Storage,
@@ -545,7 +550,7 @@ pub fn handlePlanDelete(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

@@ -21,10 +21,11 @@ test "TaskManager: createPlan - title length validation" {
     // Methodology: Test business logic validation for title length constraints.
     // We verify that the 1-500 char requirement is enforced through assertions.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = try test_utils.getTemporaryDatabasePath(allocator, "title_validation");
     defer allocator.free(temp_path);
-    defer test_utils.cleanupDatabaseFile(temp_path);
+    defer test_utils.cleanupDatabaseFile(io, temp_path);
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -48,10 +49,11 @@ test "TaskManager: createPlan - plan_id validation" {
     // Methodology: Test plan_id constraints (1-100 chars, non-empty).
     // Verify that business logic validates label IDs before storage.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = try test_utils.getTemporaryDatabasePath(allocator, "plan_id_validation");
     defer allocator.free(temp_path);
-    defer test_utils.cleanupDatabaseFile(temp_path);
+    defer test_utils.cleanupDatabaseFile(io, temp_path);
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -71,10 +73,11 @@ test "TaskManager: createPlan - description validation" {
     // Methodology: Test description length constraint (0-5000 chars).
     // Empty descriptions are valid, maximum is 5000 chars.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = try test_utils.getTemporaryDatabasePath(allocator, "description_validation");
     defer allocator.free(temp_path);
-    defer test_utils.cleanupDatabaseFile(temp_path);
+    defer test_utils.cleanupDatabaseFile(io, temp_path);
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -94,10 +97,11 @@ test "TaskManager: createPlan - duplicate ID handling" {
     // Methodology: Test that duplicate label IDs are properly rejected.
     // Storage layer enforces uniqueness via PRIMARY KEY constraint.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = try test_utils.getTemporaryDatabasePath(allocator, "duplicate_label");
     defer allocator.free(temp_path);
-    defer test_utils.cleanupDatabaseFile(temp_path);
+    defer test_utils.cleanupDatabaseFile(io, temp_path);
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -117,10 +121,11 @@ test "TaskManager: createTask - parent label validation" {
     // Methodology: Test that tasks require existing parent labels.
     // Foreign key constraint ensures referential integrity.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = try test_utils.getTemporaryDatabasePath(allocator, "parent_validation");
     defer allocator.free(temp_path);
-    defer test_utils.cleanupDatabaseFile(temp_path);
+    defer test_utils.cleanupDatabaseFile(io, temp_path);
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -144,10 +149,11 @@ test "TaskManager: createTask - title validation" {
     // Methodology: Test task title validation (1-500 chars).
     // Ensures business logic enforces title constraints.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = try test_utils.getTemporaryDatabasePath(allocator, "task_title_validation");
     defer allocator.free(temp_path);
-    defer test_utils.cleanupDatabaseFile(temp_path);
+    defer test_utils.cleanupDatabaseFile(io, temp_path);
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -172,10 +178,11 @@ test "TaskManager: createTask - dependency count limit" {
     // Methodology: Test dependency count validation (max 1000).
     // Business logic enforces reasonable dependency limits.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = try test_utils.getTemporaryDatabasePath(allocator, "dependency_limit");
     defer allocator.free(temp_path);
-    defer test_utils.cleanupDatabaseFile(temp_path);
+    defer test_utils.cleanupDatabaseFile(io, temp_path);
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();

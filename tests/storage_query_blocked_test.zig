@@ -13,13 +13,14 @@ test "getBlockedTasks: returns blocked tasks with plan_slug" {
     // Methodology: Create tasks with dependencies, verify getBlockedTasks
     // returns only blocked tasks with plan_slug populated.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blocked_tasks_with_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -52,13 +53,14 @@ test "getBlockedTasks: excludes ready and completed tasks" {
     // Methodology: Create mix of ready, blocked, and completed tasks,
     // verify only blocked open/in_progress tasks are returned.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blocked_tasks_excludes.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -95,13 +97,14 @@ test "getBlockedTasks: correct blocker counts" {
     // Methodology: Create tasks with multiple blockers, verify blocker_counts
     // are accurate.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blocked_tasks_counts.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -136,13 +139,14 @@ test "getBlockedTasks: sorted by blocker_count descending" {
     // Methodology: Create tasks with different blocker counts, verify
     // results are sorted by blocker_count (highest first).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blocked_tasks_sorting.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -186,13 +190,14 @@ test "getBlockedTasks: spans multiple plans" {
     // Methodology: Create blocked tasks under different plans, verify
     // getBlockedTasks returns tasks from all plans with correct plan_slug.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blocked_tasks_multiple_plans.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plans and tasks
     try storage.createPlan("auth", "Authentication", "", null);

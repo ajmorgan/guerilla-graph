@@ -42,7 +42,7 @@ const DepAddArgs = struct {
 
 /// Parse dep-add command arguments
 /// Command format: gg dep-add <task-id> --blocks-on <blocks-on-id>
-pub fn parseDepAddArgs(arguments: []const []const u8, storage: *Storage) !DepAddArgs {
+pub fn parseDepAddArgs(io: std.Io, arguments: []const []const u8, storage: *Storage) !DepAddArgs {
     // Rationale: First argument is the task ID (positional argument).
     // User provides this directly without a flag (e.g., "123").
     if (arguments.len == 0) {
@@ -62,7 +62,7 @@ pub fn parseDepAddArgs(arguments: []const []const u8, storage: *Storage) !DepAdd
             const resolved_task = try storage.tasks.getTaskByPlanAndNumber(pt.slug, pt.number);
             if (resolved_task == null) {
                 var stderr_buffer: [256]u8 = undefined;
-                var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+                var stderr_writer = std.Io.File.stderr().writer(io, stderr_buffer[0..]);
                 stderr_writer.interface.print("Error: Task {s}:{d} not found\n", .{ pt.slug, pt.number }) catch {};
                 return DepCommandError.InvalidArgument;
             }
@@ -93,7 +93,7 @@ pub fn parseDepAddArgs(arguments: []const []const u8, storage: *Storage) !DepAdd
                     const resolved_task = try storage.tasks.getTaskByPlanAndNumber(pt.slug, pt.number);
                     if (resolved_task == null) {
                         var stderr_buffer: [256]u8 = undefined;
-                        var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+                        var stderr_writer = std.Io.File.stderr().writer(io, stderr_buffer[0..]);
                         stderr_writer.interface.print("Error: Task {s}:{d} not found\n", .{ pt.slug, pt.number }) catch {};
                         return DepCommandError.InvalidArgument;
                     }
@@ -134,13 +134,14 @@ pub fn parseDepAddArgs(arguments: []const []const u8, storage: *Storage) !DepAdd
 /// before inserting the dependency. If a cycle would be created, the command fails
 /// with a clear error message showing the cycle path.
 pub fn handleDepAdd(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
     storage: *Storage,
 ) !void {
     // Parse command arguments
-    const args = try parseDepAddArgs(arguments, storage);
+    const args = try parseDepAddArgs(io, arguments, storage);
 
     // Assertions: Postcondition - both IDs are valid
     std.debug.assert(args.task_id > 0);
@@ -155,7 +156,7 @@ pub fn handleDepAdd(
     // Use consistent formatting with other commands.
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {
@@ -190,7 +191,7 @@ const DepRemoveArgs = struct {
 
 /// Parse dep-remove command arguments
 /// Command format: gg dep-remove <task-id> --blocks-on <blocks-on-id>
-pub fn parseDepRemoveArgs(arguments: []const []const u8, storage: *Storage) !DepRemoveArgs {
+pub fn parseDepRemoveArgs(io: std.Io, arguments: []const []const u8, storage: *Storage) !DepRemoveArgs {
     // Rationale: First argument is the task ID (positional argument).
     // User provides this directly without a flag (e.g., "123").
     if (arguments.len == 0) {
@@ -210,7 +211,7 @@ pub fn parseDepRemoveArgs(arguments: []const []const u8, storage: *Storage) !Dep
             const resolved_task = try storage.tasks.getTaskByPlanAndNumber(pt.slug, pt.number);
             if (resolved_task == null) {
                 var stderr_buffer: [256]u8 = undefined;
-                var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+                var stderr_writer = std.Io.File.stderr().writer(io, stderr_buffer[0..]);
                 stderr_writer.interface.print("Error: Task {s}:{d} not found\n", .{ pt.slug, pt.number }) catch {};
                 return DepCommandError.InvalidArgument;
             }
@@ -241,7 +242,7 @@ pub fn parseDepRemoveArgs(arguments: []const []const u8, storage: *Storage) !Dep
                     const resolved_task = try storage.tasks.getTaskByPlanAndNumber(pt.slug, pt.number);
                     if (resolved_task == null) {
                         var stderr_buffer: [256]u8 = undefined;
-                        var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+                        var stderr_writer = std.Io.File.stderr().writer(io, stderr_buffer[0..]);
                         stderr_writer.interface.print("Error: Task {s}:{d} not found\n", .{ pt.slug, pt.number }) catch {};
                         return DepCommandError.InvalidArgument;
                     }
@@ -281,13 +282,14 @@ pub fn parseDepRemoveArgs(arguments: []const []const u8, storage: *Storage) !Dep
 /// before attempting deletion. If the dependency doesn't exist, the command fails
 /// with a clear error message.
 pub fn handleDepRemove(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
     storage: *Storage,
 ) !void {
     // Parse command arguments
-    const args = try parseDepRemoveArgs(arguments, storage);
+    const args = try parseDepRemoveArgs(io, arguments, storage);
 
     // Assertions: Postcondition - both IDs are valid
     std.debug.assert(args.task_id > 0);
@@ -301,7 +303,7 @@ pub fn handleDepRemove(
     // Use consistent formatting with other commands.
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {
@@ -339,6 +341,7 @@ pub fn handleDepRemove(
 /// hops away) and status. This helps users understand what needs to be completed
 /// before they can start working on a task. See PLAN.md Section 7.3.
 pub fn handleDepBlockers(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -366,7 +369,7 @@ pub fn handleDepBlockers(
             const resolved_task = try storage.tasks.getTaskByPlanAndNumber(pt.slug, pt.number);
             if (resolved_task == null) {
                 var stderr_buffer: [256]u8 = undefined;
-                var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+                var stderr_writer = std.Io.File.stderr().writer(io, stderr_buffer[0..]);
                 stderr_writer.interface.print("Error: Task {s}:{d} not found\n", .{ pt.slug, pt.number }) catch {};
                 return DepCommandError.InvalidArgument;
             }
@@ -391,7 +394,7 @@ pub fn handleDepBlockers(
     // formatBlockerInfo uses depth for indentation and shows status indicators.
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {
@@ -423,6 +426,7 @@ pub fn handleDepBlockers(
 /// This helps users understand the impact of changes to a task and what might be
 /// unblocked when this task completes. See PLAN.md Section 7.3 for command specification.
 pub fn handleDepDependents(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -450,7 +454,7 @@ pub fn handleDepDependents(
             const resolved_task = try storage.tasks.getTaskByPlanAndNumber(pt.slug, pt.number);
             if (resolved_task == null) {
                 var stderr_buffer: [256]u8 = undefined;
-                var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+                var stderr_writer = std.Io.File.stderr().writer(io, stderr_buffer[0..]);
                 stderr_writer.interface.print("Error: Task {s}:{d} not found\n", .{ pt.slug, pt.number }) catch {};
                 return DepCommandError.InvalidArgument;
             }
@@ -473,7 +477,7 @@ pub fn handleDepDependents(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         // Rationale: Use formatBlockerInfo with is_blocker=false to display dependent tree.

@@ -21,10 +21,11 @@ test "integration: dependency graph - create tasks and add valid deps" {
     // This validates that valid dependencies can be added and queried correctly.
     // Diamond pattern: A is foundation, B and C depend on A, D depends on B and C.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "graph_valid_deps");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -78,10 +79,11 @@ test "integration: dependency graph - direct cycle detection" {
     // Rationale: Test that direct cycles (A -> B -> A) are detected and prevented.
     // This is critical for maintaining a valid DAG structure.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "graph_direct_cycle");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -105,10 +107,11 @@ test "integration: dependency graph - transitive cycle detection" {
     // Rationale: Test that transitive cycles (A -> B -> D -> A) are detected.
     // This validates recursive cycle detection through intermediate nodes.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "graph_transitive_cycle");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -137,10 +140,11 @@ test "integration: dependency graph - diamond pattern blockers query" {
     // Rationale: Test blocker queries with complex diamond pattern.
     // Validates transitive blocker resolution and shortest path depth calculation.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "graph_blockers");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -195,10 +199,11 @@ test "integration: dependency graph - dependents query" {
     // Rationale: Test dependents query (inverse of blockers) with diamond pattern.
     // Validates that we can discover what tasks will be unblocked when a task completes.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "graph_dependents");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -253,9 +258,10 @@ test "integration: dependency graph - add remove deps and verify updates" {
     // Rationale: Test dependency removal and graph updates. Validates that
     // removal updates graph structure and enables previously invalid deps.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
     const database_path = try getTemporaryDatabasePath(allocator, "graph_add_remove");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try storage.Storage.init(allocator, database_path);
     defer test_storage.deinit();

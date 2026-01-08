@@ -122,6 +122,7 @@ fn formatReadyTasksHierarchical(
 /// Rationale: Core query for agent work coordination. Shows tasks agents can
 /// immediately start without waiting for dependencies.
 pub fn handleQueryReady(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -187,7 +188,7 @@ pub fn handleQueryReady(
     }
 
     var stdout_buffer: [8192]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+    var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
     const stdout = &stdout_writer.interface;
 
     // Use hierarchical list format

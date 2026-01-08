@@ -15,7 +15,7 @@ const system_help = @import("../help/content/system.zig");
 ///
 /// Command: gg workflow
 /// Example: gg workflow
-pub fn handleWorkflow(allocator: std.mem.Allocator, json_output: bool) !void {
+pub fn handleWorkflow(io: std.Io, allocator: std.mem.Allocator, json_output: bool) !void {
     // Rationale: Workflow command delegates to centralized help content.
     // This eliminates duplication and provides single source of truth.
     // Parameters kept for API consistency with other command handlers.
@@ -26,7 +26,7 @@ pub fn handleWorkflow(allocator: std.mem.Allocator, json_output: bool) !void {
     // Rationale: Get the stdout writer for formatted output.
     // We use a buffered writer to ensure output is flushed properly.
     var stdout_buffer: [8192]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+    var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
     const stdout = &stdout_writer.interface;
 
     // Rationale: Delegate to centralized help content from help system.

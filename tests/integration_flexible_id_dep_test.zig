@@ -23,10 +23,11 @@ test "integration: flexible ID parsing - dep add command" {
     //
     // Rationale: Both task_id and blocks_on_id should accept flexible formats.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_dep_add");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -89,10 +90,11 @@ test "integration: flexible ID parsing - dep remove command" {
     //
     // Rationale: Remove command should accept same formats as add command.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_dep_remove");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();
@@ -155,10 +157,11 @@ test "integration: flexible ID parsing - dep blockers and dependents commands" {
     //
     // Rationale: Query commands should accept flexible ID formats for consistency.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_dep_queries");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();

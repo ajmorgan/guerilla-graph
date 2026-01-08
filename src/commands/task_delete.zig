@@ -28,6 +28,7 @@ pub const CommandError = error{
 /// Success confirmation displays the formatted ID (e.g., "auth:019").
 ///
 /// Arguments:
+/// - io: I/O interface for stdout/stderr access
 /// - allocator: Memory allocator for temporary allocations
 /// - arguments: CLI arguments (expects task ID as first argument)
 /// - json_output: If true, output JSON; otherwise output human-readable text
@@ -37,6 +38,7 @@ pub const CommandError = error{
 /// Errors: CommandError.MissingArgument, CommandError.InvalidArgument, CommandError.TaskNotFound,
 ///         StorageError.TaskHasDependents (propagated from storage layer)
 pub fn handleTaskDelete(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -84,7 +86,7 @@ pub fn handleTaskDelete(
     // Rationale: After successful deletion, confirm to user with formatted ID.
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

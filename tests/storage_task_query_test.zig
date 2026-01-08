@@ -37,13 +37,14 @@ fn bindInt64(statement: *c.sqlite3_stmt, index: c_int, value: i64) !void {
 
 test "listTasks: filters by status" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_status.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks with different statuses
     try storage.createPlan("test", "Test", "Test tasks", null);
@@ -71,13 +72,14 @@ test "listTasks: filters by status" {
 
 test "listTasks: filters by plan" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_plan.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create two plans with tasks
     try storage.createPlan("frontend", "Frontend", "Frontend work", null);
@@ -103,13 +105,14 @@ test "listTasks: filters by plan" {
 
 test "getReadyTasks: returns tasks with no dependencies" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_ready_tasks_no_deps.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks with no dependencies
     try storage.createPlan("backend", "Backend", "Backend work", null);
@@ -134,13 +137,14 @@ test "getReadyTasks: returns tasks with no dependencies" {
 
 test "getReadyTasks: excludes tasks with incomplete dependencies" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_ready_tasks_with_blockers.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("api", "API", "API development", null);
@@ -175,13 +179,14 @@ test "getReadyTasks: excludes tasks with incomplete dependencies" {
 
 test "getReadyTasks: includes tasks when blockers are completed" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_ready_tasks_completed_blockers.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("deploy", "Deploy", "Deployment tasks", null);
@@ -211,13 +216,14 @@ test "getReadyTasks: includes tasks when blockers are completed" {
 
 test "getReadyTasks: respects limit parameter" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_ready_tasks_limit.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and 5 tasks
     try storage.createPlan("test", "Test", "Test tasks", null);
@@ -242,13 +248,14 @@ test "getReadyTasks: respects limit parameter" {
 
 test "getReadyTasks: empty result when no tasks exist" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_ready_tasks_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan but no tasks
     try storage.createPlan("empty", "Empty", "No tasks", null);
@@ -263,13 +270,14 @@ test "getReadyTasks: empty result when no tasks exist" {
 
 test "getReadyTasks: empty result when all tasks completed" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_ready_tasks_all_completed.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("done", "Done", "Completed tasks", null);
@@ -292,13 +300,14 @@ test "getReadyTasks: empty result when all tasks completed" {
 
 test "getBlockedTasks: returns tasks with incomplete dependencies" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_blocked_tasks_basic.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("feature", "Feature", "Feature work", null);
@@ -321,13 +330,14 @@ test "getBlockedTasks: returns tasks with incomplete dependencies" {
 
 test "getBlockedTasks: empty result when no blocked tasks" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_blocked_tasks_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks with no dependencies
     try storage.createPlan("ready", "Ready", "All ready", null);
@@ -344,13 +354,14 @@ test "getBlockedTasks: empty result when no blocked tasks" {
 
 test "getBlockedTasks: excludes tasks when blockers are completed" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_blocked_tasks_completed_blocker.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("unblock", "Unblock", "Unblocking tasks", null);
@@ -374,13 +385,14 @@ test "getBlockedTasks: excludes tasks when blockers are completed" {
 
 test "getBlockedTasks: orders by blocker count descending" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_blocked_tasks_ordering.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("ordering", "Ordering", "Test ordering", null);
@@ -412,13 +424,14 @@ test "getBlockedTasks: orders by blocker count descending" {
 
 test "listTasks: no filters returns all tasks" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_no_filter.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks with different statuses
     try storage.createPlan("all", "All", "All tasks", null);
@@ -446,13 +459,14 @@ test "listTasks: no filters returns all tasks" {
 
 test "listTasks: filters by in_progress status" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_in_progress.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks with different statuses
     try storage.createPlan("work", "Work", "Work tasks", null);
@@ -481,13 +495,14 @@ test "listTasks: filters by in_progress status" {
 
 test "listTasks: filters by completed status" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_completed.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("finish", "Finish", "Finished tasks", null);
@@ -515,13 +530,14 @@ test "listTasks: filters by completed status" {
 
 test "listTasks: combines status and plan filters" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_combined.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create two plans with tasks
     try storage.createPlan("ui", "UI", "UI work", null);
@@ -554,13 +570,14 @@ test "listTasks: combines status and plan filters" {
 
 test "listTasks: empty result when filter matches nothing" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_tasks_empty_filter.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks (all open)
     try storage.createPlan("none", "None", "No completed", null);
@@ -582,13 +599,14 @@ test "listTasks: empty result when filter matches nothing" {
 test "getReadyTasks: returns unblocked open tasks" {
     // Methodology: Test that ready tasks query returns only unblocked, open tasks.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_ready_unblocked.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "", null);
     const task1 = try storage.createTask("test", "Ready task", "");

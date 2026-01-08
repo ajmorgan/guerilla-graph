@@ -16,13 +16,14 @@ test "addDependency: successful dependency creation" {
     // Methodology: Create two tasks and add dependency between them
     // Verify dependency is stored correctly in database
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_add_dependency.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -56,13 +57,14 @@ test "addDependency: direct cycle detection" {
     // Methodology: Test that adding A -> B when B -> A exists is rejected
     // This tests the most basic cycle: A -> B -> A
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_direct_cycle.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -94,13 +96,14 @@ test "addDependency: transitive cycle detection" {
     // Methodology: Test that adding A -> C when A -> B -> C exists is rejected
     // This creates a longer cycle: A -> B -> C -> A
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_transitive_cycle.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -133,13 +136,14 @@ test "addDependency: diamond dependency is allowed" {
     // Methodology: Test that diamond patterns (A -> B, A -> C, B -> D, C -> D) are valid
     // This is NOT a cycle, just multiple paths to same task
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_diamond_dependency.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -169,13 +173,14 @@ test "addDependency: nonexistent task should fail" {
     // Methodology: Attempt to add dependency with invalid task IDs
     // Verify proper error handling for non-existent tasks
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_add_dep_invalid.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -203,13 +208,14 @@ test "removeDependency: successful removal" {
     // Methodology: Create dependency then remove it
     // Verify it's gone from database
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_remove_dependency.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -237,13 +243,14 @@ test "removeDependency: nonexistent dependency should fail" {
     // Methodology: Attempt to remove dependency that doesn't exist
     // Verify proper error handling
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_remove_dep_invalid.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -262,13 +269,14 @@ test "getBlockers: direct blockers only" {
     // Task C blocks on B, B blocks on A
     // getBlockers(C) should return [B, A] in order
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blockers_direct.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -301,13 +309,14 @@ test "getBlockers: diamond pattern shows shortest path" {
     // Methodology: Create diamond (D -> B, D -> C, B -> A, C -> A)
     // getBlockers(D) should show A once with depth=2 (shortest path)
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blockers_diamond.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -349,13 +358,14 @@ test "getBlockers: no blockers returns empty slice" {
     // Methodology: Query blockers for task with no dependencies
     // Verify empty result
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_blockers_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -374,13 +384,14 @@ test "getDependents: direct dependents only" {
     // A <- B <- C (C depends on B, B depends on A)
     // getDependents(A) should return [B, C] in order
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_dependents_direct.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -413,13 +424,14 @@ test "getDependents: diamond pattern shows shortest path" {
     // Methodology: Create diamond (D -> B, D -> C, B -> A, C -> A)
     // getDependents(A) should show D once with depth=2 (shortest path)
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_dependents_diamond.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -461,13 +473,14 @@ test "getDependents: no dependents returns empty slice" {
     // Methodology: Query dependents for task that nothing depends on
     // Verify empty result
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_dependents_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -486,13 +499,14 @@ test "detectCycle: catches self-loop attempt" {
     // Note: addDependency has assertion to prevent self-loops,
     // but detectCycle itself should also handle this
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_detect_self_loop.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -515,13 +529,14 @@ test "detectCycle: catches self-loop attempt" {
 test "detectCycle: detects long transitive cycle" {
     // Methodology: Create A -> B -> C -> D, then verify D -> A would create cycle
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_detect_long_cycle.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 
@@ -545,13 +560,14 @@ test "detectCycle: detects long transitive cycle" {
 test "detectCycle: allows valid non-cycle dependency" {
     // Methodology: Create A -> B, verify C -> A is valid (no cycle)
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_detect_no_cycle.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     try storage.createPlan("test", "Test", "Test label", null);
 

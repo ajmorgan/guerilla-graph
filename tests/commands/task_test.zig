@@ -36,10 +36,11 @@ const cleanupDatabaseFile = test_utils.cleanupDatabaseFile;
 test "task_commands.handleTaskNew: successful creation" {
     // Methodology: Verify task can be created under a plan with required fields.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "task_new_success");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -51,7 +52,7 @@ test "task_commands.handleTaskNew: successful creation" {
     try storage.createPlan("auth", "Authentication", "", null);
 
     const args = &[_][]const u8{ "--title", "Add login endpoint", "--plan", "auth" };
-    try task_commands.handleTaskNew(allocator, args, false, &storage, &task_manager);
+    try task_commands.handleTaskNew(io, allocator, args, false, &storage, &task_manager);
 
     // Verify task was created
     const tasks = try storage.listTasks(null, "auth");
@@ -69,10 +70,11 @@ test "task_commands.handleTaskNew: successful creation" {
 test "task_commands.handleTaskNew: missing plan error" {
     // Methodology: Verify error when required --plan flag is missing.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "task_new_no_plan");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -81,7 +83,7 @@ test "task_commands.handleTaskNew: missing plan error" {
     defer task_manager.deinit();
 
     const args = &[_][]const u8{ "--title", "Task without plan" };
-    const result = task_commands.handleTaskNew(allocator, args, false, &storage, &task_manager);
+    const result = task_commands.handleTaskNew(io, allocator, args, false, &storage, &task_manager);
 
     try std.testing.expectError(CommandError.MissingRequiredFlag, result);
 }
@@ -89,10 +91,11 @@ test "task_commands.handleTaskNew: missing plan error" {
 test "task_commands.handleTaskNew: with description" {
     // Methodology: Verify description is stored correctly.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "task_new_desc");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -103,7 +106,7 @@ test "task_commands.handleTaskNew: with description" {
     try storage.createPlan("api", "API", "", null);
 
     const args = &[_][]const u8{ "--title", "Add endpoint", "--plan", "api", "--description", "REST endpoint for users" };
-    try task_commands.handleTaskNew(allocator, args, false, &storage, &task_manager);
+    try task_commands.handleTaskNew(io, allocator, args, false, &storage, &task_manager);
 
     // Verify description
     const tasks = try storage.listTasks(null, "api");
@@ -124,10 +127,11 @@ test "task_commands.handleTaskNew: with description" {
 test "task_commands.handleTaskStart: successful start" {
     // Methodology: Verify task status changes to in_progress.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "task_start_success");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -141,7 +145,7 @@ test "task_commands.handleTaskStart: successful start" {
     defer allocator.free(task_id_str);
 
     const args = &[_][]const u8{task_id_str};
-    try task_commands.handleTaskStart(allocator, args, false, &storage);
+    try task_commands.handleTaskStart(io, allocator, args, false, &storage);
 
     // Verify status changed
     var task = (try storage.getTask(task_id)).?;
@@ -153,16 +157,17 @@ test "task_commands.handleTaskStart: successful start" {
 test "task_commands.handleTaskStart: task not found" {
     // Methodology: Verify error when task doesn't exist.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "task_start_not_found");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
 
     const args = &[_][]const u8{"99999"};
-    const result = task_commands.handleTaskStart(allocator, args, false, &storage);
+    const result = task_commands.handleTaskStart(io, allocator, args, false, &storage);
 
     try std.testing.expectError(error.InvalidData, result);
 }
@@ -174,10 +179,11 @@ test "task_commands.handleTaskStart: task not found" {
 test "task_commands.handleTaskComplete: successful completion" {
     // Methodology: Verify task status changes to completed.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "task_complete_success");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -194,7 +200,7 @@ test "task_commands.handleTaskComplete: successful completion" {
     defer allocator.free(task_id_str);
 
     const args = &[_][]const u8{task_id_str};
-    try task_commands.handleTaskComplete(allocator, args, false, &storage);
+    try task_commands.handleTaskComplete(io, allocator, args, false, &storage);
 
     // Verify status changed
     var task = (try storage.getTask(task_id)).?;
@@ -206,10 +212,11 @@ test "task_commands.handleTaskComplete: successful completion" {
 test "task_commands.handleTaskComplete: bulk completion" {
     // Methodology: Verify multiple tasks can be completed at once.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const db_path = try getTemporaryDatabasePath(allocator, "task_complete_bulk");
     defer allocator.free(db_path);
-    defer cleanupDatabaseFile(db_path);
+    defer cleanupDatabaseFile(io, db_path);
 
     var storage = try Storage.init(allocator, db_path);
     defer storage.deinit();
@@ -230,7 +237,7 @@ test "task_commands.handleTaskComplete: bulk completion" {
     defer allocator.free(id2_str);
 
     const args = &[_][]const u8{ id1_str, id2_str };
-    try task_commands.handleTaskComplete(allocator, args, false, &storage);
+    try task_commands.handleTaskComplete(io, allocator, args, false, &storage);
 
     // Verify both completed
     const completed_tasks = try storage.listTasks(types.TaskStatus.completed, "test");
@@ -250,17 +257,21 @@ test "task_commands.handleTaskComplete: bulk completion" {
 
 test "parseCreateArgs - description-file reads file and tracks ownership" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp file
     const temp_file = "test_desc_create.md";
-    try std.fs.cwd().writeFile(.{ .sub_path = temp_file, .data = "Test content from file" });
-    defer std.fs.cwd().deleteFile(temp_file) catch {};
+    const file = try std.Io.Dir.cwd().createFile(io, temp_file, .{});
+    const content = "Test content from file";
+    try file.writePositionalAll(io, content, 0);
+    file.close(io);
+    defer std.Io.Dir.cwd().deleteFile(io, temp_file) catch {};
 
     // Parse with --description-file
     const args_input = &[_][]const u8{
         "--title", "Task Title", "--plan", "auth", "--description-file", temp_file,
     };
-    const args = try task_commands.parseCreateArgs(allocator, args_input);
+    const args = try task_commands.parseCreateArgs(io, allocator, args_input);
     defer {
         if (args.description_owned) allocator.free(args.description);
     }
@@ -271,11 +282,12 @@ test "parseCreateArgs - description-file reads file and tracks ownership" {
 
 test "parseCreateArgs - description borrowed from argv" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const args_input = &[_][]const u8{
         "--title", "Task Title", "--plan", "auth", "--description", "Inline text",
     };
-    const args = try task_commands.parseCreateArgs(allocator, args_input);
+    const args = try task_commands.parseCreateArgs(io, allocator, args_input);
 
     try std.testing.expectEqualStrings("Inline text", args.description);
     try std.testing.expect(!args.description_owned);
@@ -283,15 +295,19 @@ test "parseCreateArgs - description borrowed from argv" {
 
 test "parseUpdateArgs - description-file reads file and tracks ownership" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_file = "test_desc_update.md";
-    try std.fs.cwd().writeFile(.{ .sub_path = temp_file, .data = "Updated content" });
-    defer std.fs.cwd().deleteFile(temp_file) catch {};
+    const file = try std.Io.Dir.cwd().createFile(io, temp_file, .{});
+    const content = "Updated content";
+    try file.writePositionalAll(io, content, 0);
+    file.close(io);
+    defer std.Io.Dir.cwd().deleteFile(io, temp_file) catch {};
 
     const args_input = &[_][]const u8{
         "42", "--description-file", temp_file,
     };
-    const args = try task_commands.parseUpdateArgs(allocator, args_input);
+    const args = try task_commands.parseUpdateArgs(io, allocator, args_input);
     defer {
         if (args.description_owned and args.description != null) {
             allocator.free(args.description.?);

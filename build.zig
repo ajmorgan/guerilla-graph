@@ -21,8 +21,6 @@ pub fn build(b: *std.Build) void {
     // target and optimize options) will be listed when running `zig build --help`
     // in this directory.
 
-    // Custom build options
-    const enable_lto = b.option(bool, "lto", "Enable Link Time Optimization") orelse false;
 
     // This creates a module, which represents a collection of source files alongside
     // some compilation options, such as optimization mode and linked system libraries.
@@ -97,11 +95,6 @@ pub fn build(b: *std.Build) void {
 
     // Link system SQLite3 library for executable
     exe.root_module.linkSystemLibrary("sqlite3", .{});
-
-    // Enable Link Time Optimization for release builds
-    if (enable_lto) {
-        exe.want_lto = true;
-    }
 
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default

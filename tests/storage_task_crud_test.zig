@@ -16,13 +16,14 @@ const c = guerilla_graph.storage.c_funcs;
 
 test "createTask: successful creation" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create label first
     try storage.createPlan("api", "API", "API development", null);
@@ -60,13 +61,14 @@ test "createTask: successful creation" {
 
 test "createTask: invalid label should fail" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_invalid_label.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to create task without label
     const result = storage.createTask("nonexistent", "Test Task", "Should fail");
@@ -75,13 +77,14 @@ test "createTask: invalid label should fail" {
 
 test "createTask: sequential task numbers" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_task_sequential.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create label
     try storage.createPlan("ui", "UI", "User interface", null);
@@ -99,13 +102,14 @@ test "createTask: sequential task numbers" {
 
 test "startTask: successful status transition" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_start_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create label and task
     try storage.createPlan("backend", "Backend", "Backend work", null);
@@ -138,10 +142,11 @@ test "startTask: nonexistent task should error" {
     // This prevents silent failures and catches programming errors early.
     // The test verifies that InvalidData error is returned for nonexistent tasks.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_start_nonexistent.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage_instance = try Storage.init(allocator, temp_path);
     defer storage_instance.deinit();
@@ -154,13 +159,14 @@ test "startTask: nonexistent task should error" {
 
 test "completeTask: successful status transition" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_complete_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create label and task
     try storage.createPlan("docs", "Documentation", "Documentation tasks", null);
@@ -193,13 +199,14 @@ test "completeTask: successful status transition" {
 
 test "deleteTask: successful deletion" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create label and task
     try storage.createPlan("cleanup", "Cleanup", "Cleanup tasks", null);
@@ -226,13 +233,14 @@ test "deleteTask: successful deletion" {
 
 test "deleteTask: fails when task has dependents" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_task_with_dependents.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create label and two tasks
     try storage.createPlan("migration", "Migration", "Database migration", null);
@@ -264,13 +272,14 @@ test "deleteTask: fails when task has dependents" {
 
 test "deleteTask: nonexistent task should fail" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_nonexistent_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to delete nonexistent task
     const result = storage.deleteTask(999);
@@ -282,10 +291,11 @@ test "deleteTask: removes dependencies when deleting dependent task" {
     // deleteTask allows deletion of tasks that have blockers (tasks they depend on).
     // deleteTask prevents deletion of tasks that have dependents (tasks that depend on them).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_with_deps.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage_instance = try Storage.init(allocator, temp_path);
     defer storage_instance.deinit();

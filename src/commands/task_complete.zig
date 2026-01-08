@@ -32,6 +32,7 @@ pub const CommandError = error{
 /// Rationale: Agents mark tasks complete after finishing work. Bulk completion
 /// is more efficient when multiple tasks finish together (uses single SQL UPDATE).
 pub fn handleTaskComplete(
+    io: std.Io,
     allocator: std.mem.Allocator,
     arguments: []const []const u8,
     json_output: bool,
@@ -112,7 +113,7 @@ pub fn handleTaskComplete(
 
     if (!builtin.is_test) {
         var stdout_buffer: [8192]u8 = undefined;
-        var stdout_writer = std.fs.File.stdout().writer(stdout_buffer[0..]);
+        var stdout_writer = std.Io.File.stdout().writer(io, stdout_buffer[0..]);
         const stdout = &stdout_writer.interface;
 
         if (json_output) {

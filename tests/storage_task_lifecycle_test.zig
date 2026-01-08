@@ -20,13 +20,14 @@ test "startTask: transitions status and sets started_at" {
     // Methodology: Start task, verify status changes to in_progress
     // and started_at timestamp is set.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_start_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);
@@ -50,13 +51,14 @@ test "completeTask: transitions status and sets completed_at" {
     // Methodology: Start then complete task, verify status changes to completed
     // and completed_at timestamp is set.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_complete_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);
@@ -84,13 +86,14 @@ test "completeTask: transitions status and sets completed_at" {
 test "deleteTask: removes task successfully" {
     // Methodology: Create and delete task, verify it no longer exists.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_task.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and task
     try storage.createPlan("auth", "Authentication", "", null);
@@ -107,13 +110,14 @@ test "deleteTask: removes task successfully" {
 test "deleteTask: nonexistent task fails" {
     // Methodology: Attempt to delete nonexistent task, verify error.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_task_nonexistent.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to delete nonexistent task
     const result = storage.deleteTask(999);

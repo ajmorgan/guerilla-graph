@@ -16,10 +16,11 @@ test "TaskManager: createTask - proper error propagation" {
     // Methodology: Test that storage errors are properly propagated.
     // Ensures business logic doesn't swallow critical errors.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_task_manager_error_propagation.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -40,10 +41,11 @@ test "TaskManager: memory safety - proper cleanup on success" {
     // Methodology: Test that successful operations don't leak memory.
     // Uses testing.allocator to detect leaks.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_task_manager_memory_success.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();
@@ -69,10 +71,11 @@ test "TaskManager: memory safety - proper cleanup on error" {
     // Methodology: Test that failed operations clean up properly.
     // Even on error, no memory should leak.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_task_manager_memory_error.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var test_storage = try Storage.init(allocator, temp_path);
     defer test_storage.deinit();

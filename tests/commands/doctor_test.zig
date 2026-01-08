@@ -18,11 +18,12 @@ test "special_commands.handleDoctor: executes without error (stub, no arguments)
     // Storage.healthCheck exists and is ready. Integration blocked on workspace discovery.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp storage
     const db_path = try test_utils.getTemporaryDatabasePath(allocator, "test_doctor_exec");
     defer allocator.free(db_path);
-    defer test_utils.cleanupDatabaseFile(db_path);
+    defer test_utils.cleanupDatabaseFile(io, db_path);
 
     var test_storage = try Storage.init(allocator, db_path);
     defer test_storage.deinit();
@@ -30,7 +31,7 @@ test "special_commands.handleDoctor: executes without error (stub, no arguments)
     const args = &[_][]const u8{};
 
     // Should not error even though it's a no-op stub
-    try doctor_commands.handleDoctor(allocator, args, false, &test_storage);
+    try doctor_commands.handleDoctor(io, allocator, args, false, &test_storage);
 }
 
 test "special_commands.handleDoctor: json output mode (stub)" {
@@ -38,11 +39,12 @@ test "special_commands.handleDoctor: json output mode (stub)" {
     // JSON output mode will be fully implemented when workspace discovery is complete.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp storage
     const db_path = try test_utils.getTemporaryDatabasePath(allocator, "test_doctor_json");
     defer allocator.free(db_path);
-    defer test_utils.cleanupDatabaseFile(db_path);
+    defer test_utils.cleanupDatabaseFile(io, db_path);
 
     var test_storage = try Storage.init(allocator, db_path);
     defer test_storage.deinit();
@@ -50,7 +52,7 @@ test "special_commands.handleDoctor: json output mode (stub)" {
     const args = &[_][]const u8{};
 
     // Should not error with JSON mode enabled
-    try doctor_commands.handleDoctor(allocator, args, true, &test_storage);
+    try doctor_commands.handleDoctor(io, allocator, args, true, &test_storage);
 }
 
 test "special_commands.handleDoctor: rejects arguments" {
@@ -58,18 +60,19 @@ test "special_commands.handleDoctor: rejects arguments" {
     // Any provided arguments should be rejected.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp storage
     const db_path = try test_utils.getTemporaryDatabasePath(allocator, "test_doctor_reject");
     defer allocator.free(db_path);
-    defer test_utils.cleanupDatabaseFile(db_path);
+    defer test_utils.cleanupDatabaseFile(io, db_path);
 
     var test_storage = try Storage.init(allocator, db_path);
     defer test_storage.deinit();
 
     const args = &[_][]const u8{"--something"};
 
-    const result = doctor_commands.handleDoctor(allocator, args, false, &test_storage);
+    const result = doctor_commands.handleDoctor(io, allocator, args, false, &test_storage);
     try std.testing.expectError(CommandError.InvalidArgument, result);
 }
 
@@ -78,18 +81,19 @@ test "special_commands.handleDoctor: rejects extra positional arguments" {
     // Any provided positional arguments should be rejected.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp storage
     const db_path = try test_utils.getTemporaryDatabasePath(allocator, "test_doctor_extra");
     defer allocator.free(db_path);
-    defer test_utils.cleanupDatabaseFile(db_path);
+    defer test_utils.cleanupDatabaseFile(io, db_path);
 
     var test_storage = try Storage.init(allocator, db_path);
     defer test_storage.deinit();
 
     const args = &[_][]const u8{"extra"};
 
-    const result = doctor_commands.handleDoctor(allocator, args, false, &test_storage);
+    const result = doctor_commands.handleDoctor(io, allocator, args, false, &test_storage);
     try std.testing.expectError(CommandError.InvalidArgument, result);
 }
 
@@ -105,11 +109,12 @@ test "blocked_commands.handleQueryBlocked: executes without error (stub)" {
     // Integration blocked on workspace discovery.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp storage
     const db_path = try test_utils.getTemporaryDatabasePath(allocator, "test_blocked_exec");
     defer allocator.free(db_path);
-    defer test_utils.cleanupDatabaseFile(db_path);
+    defer test_utils.cleanupDatabaseFile(io, db_path);
 
     var test_storage = try Storage.init(allocator, db_path);
     defer test_storage.deinit();
@@ -117,7 +122,7 @@ test "blocked_commands.handleQueryBlocked: executes without error (stub)" {
     const args = &[_][]const u8{};
 
     // Should not error even though it's a no-op stub
-    try blocked_commands.handleQueryBlocked(allocator, args, false, &test_storage);
+    try blocked_commands.handleQueryBlocked(io, allocator, args, false, &test_storage);
 }
 
 test "blocked_commands.handleQueryBlocked: json output mode (stub)" {
@@ -125,11 +130,12 @@ test "blocked_commands.handleQueryBlocked: json output mode (stub)" {
     // JSON mode is used by tools that parse gg output programmatically.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp storage
     const db_path = try test_utils.getTemporaryDatabasePath(allocator, "test_blocked_json");
     defer allocator.free(db_path);
-    defer test_utils.cleanupDatabaseFile(db_path);
+    defer test_utils.cleanupDatabaseFile(io, db_path);
 
     var test_storage = try Storage.init(allocator, db_path);
     defer test_storage.deinit();
@@ -137,7 +143,7 @@ test "blocked_commands.handleQueryBlocked: json output mode (stub)" {
     const args = &[_][]const u8{};
 
     // Should not error even though it's a stub
-    try blocked_commands.handleQueryBlocked(allocator, args, true, &test_storage);
+    try blocked_commands.handleQueryBlocked(io, allocator, args, true, &test_storage);
 }
 
 test "blocked_commands.handleQueryBlocked: rejects extra arguments" {
@@ -145,18 +151,19 @@ test "blocked_commands.handleQueryBlocked: rejects extra arguments" {
     // Command takes no arguments and should reject any provided arguments.
 
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temp storage
     const db_path = try test_utils.getTemporaryDatabasePath(allocator, "test_blocked_args");
     defer allocator.free(db_path);
-    defer test_utils.cleanupDatabaseFile(db_path);
+    defer test_utils.cleanupDatabaseFile(io, db_path);
 
     var test_storage = try Storage.init(allocator, db_path);
     defer test_storage.deinit();
 
     const args = &[_][]const u8{"unexpected-arg"}; // Command takes no arguments
 
-    const result = blocked_commands.handleQueryBlocked(allocator, args, false, &test_storage);
+    const result = blocked_commands.handleQueryBlocked(io, allocator, args, false, &test_storage);
 
     // Should fail with invalid argument
     try std.testing.expectError(CommandError.InvalidArgument, result);

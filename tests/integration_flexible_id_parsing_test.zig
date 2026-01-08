@@ -24,11 +24,12 @@ test "integration: flexible ID parsing - smart show command" {
     // Rationale: Users should be able to use any ID format (numeric, zero-padded,
     // formatted) with the show command for maximum convenience.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Setup: Create temporary database
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_smart_show");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try Storage.init(allocator, database_path);
@@ -81,10 +82,11 @@ test "integration: flexible ID parsing - smart update command" {
     //
     // Rationale: Update command should accept the same flexible ID formats as show.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const database_path = try getTemporaryDatabasePath(allocator, "flexible_smart_update");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     var test_storage = try Storage.init(allocator, database_path);
     defer test_storage.deinit();

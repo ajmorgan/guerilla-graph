@@ -16,13 +16,14 @@ fn bindText(statement: *c.sqlite3_stmt, index: c_int, text: []const u8) !void {
 
 test "createPlan: successful creation" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_plan.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create a plan
     try storage.createPlan("auth", "Authentication", "User authentication and authorization", null);
@@ -50,13 +51,14 @@ test "createPlan: successful creation" {
 
 test "createPlan: duplicate ID should fail" {
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_plan_duplicate.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create first plan
     try storage.createPlan("payments", "Payments", "Payment processing", null);
@@ -80,12 +82,13 @@ test "deletePlan: successful deletion with no tasks" {
     // Methodology: Verify deletion works when no tasks exist (regression test).
     // Ensures basic deletion still works after CASCADE implementation.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
     const temp_path = "/tmp/test_delete_plan_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan with no tasks
     try storage.createPlan("cleanup", "Cleanup Tasks", "", null);
@@ -113,12 +116,13 @@ test "deletePlan: cascade deletes all tasks" {
     // Methodology: Create plan with multiple tasks, delete plan,
     // verify all tasks are CASCADE deleted (not orphaned with NULL plan).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
     const temp_path = "/tmp/test_delete_plan_cascade.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("auth", "Authentication", "", null);
@@ -177,12 +181,13 @@ test "deletePlan: cascade deletes tasks and their dependencies" {
     // verify tasks AND dependencies are all CASCADE deleted.
     // Tests full cascade chain: plan → tasks → dependencies.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
     const temp_path = "/tmp/test_delete_plan_deps.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks with dependencies
     try storage.createPlan("feature", "Feature X", "", null);
@@ -227,12 +232,13 @@ test "deletePlan: fails for non-existent plan" {
     // Methodology: Verify clear error when trying to delete non-existent plan.
     // Error handling regression test.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
     const temp_path = "/tmp/test_delete_plan_notfound.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to delete non-existent plan (should fail with InvalidData)
     const result = storage.deletePlan("nonexistent");

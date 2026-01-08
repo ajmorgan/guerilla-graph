@@ -25,11 +25,12 @@ test "integration: database health check flow" {
     // 3. Verify health report indicates no errors
     // 4. Verify health report structure is valid
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Create temporary database for this test
     const database_path = try getTemporaryDatabasePath(allocator, "health_check_flow");
     defer allocator.free(database_path);
-    defer cleanupDatabaseFile(database_path);
+    defer cleanupDatabaseFile(io, database_path);
 
     // Initialize storage and task manager
     var test_storage = try storage.Storage.init(allocator, database_path);

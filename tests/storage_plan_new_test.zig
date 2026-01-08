@@ -30,13 +30,14 @@ test "createPlan: successful creation with auto-generated INTEGER id" {
     // Methodology: Create plan with slug, verify INTEGER id is auto-generated
     // and slug is stored correctly. Validates new schema works.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_plan_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan with slug
     try storage.createPlan("auth", "Authentication", "User auth system", null);
@@ -69,13 +70,14 @@ test "createPlan: duplicate slug detection" {
     // Methodology: Create two plans with same slug, verify second fails.
     // Tests UNIQUE constraint on slug column.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_plan_duplicate_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create first plan
     try storage.createPlan("payments", "Payment System", "Handles payments", null);
@@ -89,13 +91,14 @@ test "createPlan: multiple plans have unique INTEGER ids" {
     // Methodology: Create multiple plans, verify each gets unique INTEGER id.
     // Validates AUTOINCREMENT works correctly.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_create_plan_unique_ids.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create three plans
     try storage.createPlan("auth", "Authentication", "", null);
@@ -143,13 +146,14 @@ test "getPlanSummary: returns INTEGER id and slug" {
     // Methodology: Create plan, retrieve summary, verify both id and slug are present.
     // Validates new PlanSummary structure with both fields.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_plan_summary_id_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("tech-debt", "Technical Debt", "Cleanup tasks", null);
@@ -174,13 +178,14 @@ test "getPlanSummary: returns null for non-existent slug" {
     // Methodology: Query non-existent plan, verify null returned.
     // Tests error handling for missing plans.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_plan_summary_notfound.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Query non-existent plan
     const summary = try storage.getPlanSummary("nonexistent");
@@ -191,13 +196,14 @@ test "getPlanSummary: includes task counts" {
     // Methodology: Create plan with tasks in various states, verify counts.
     // Tests aggregation logic in getPlanSummary.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_plan_summary_counts.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("feature", "Feature X", "", null);
@@ -233,13 +239,14 @@ test "getPlanIdFromSlug: successful resolution" {
     // Methodology: Create plan, resolve slug to INTEGER id.
     // Validates slug→id lookup functionality.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_plan_id_from_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("billing", "Billing System", "", null);
@@ -270,13 +277,14 @@ test "getPlanIdFromSlug: fails for non-existent slug" {
     // Methodology: Attempt to resolve non-existent slug, verify error.
     // Tests error handling for invalid slugs.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_get_plan_id_notfound.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to resolve non-existent slug
     const result = storage.plans.getPlanIdFromSlug("nonexistent");
@@ -291,13 +299,14 @@ test "updatePlan: update title by slug" {
     // Methodology: Create plan, update title using slug, verify change.
     // Tests slug-based update functionality.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_update_plan_title_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("analytics", "Analytics", "Old description", null);
@@ -319,13 +328,14 @@ test "updatePlan: update title by slug" {
 test "updatePlan: update description by slug" {
     // Methodology: Create plan, update description using slug, verify change.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_update_plan_desc_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("reporting", "Reporting", "Old description", null);
@@ -347,13 +357,14 @@ test "updatePlan: update description by slug" {
 test "updatePlan: update both title and description by slug" {
     // Methodology: Create plan, update both fields using slug, verify changes.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_update_plan_both_slug.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("search", "Search", "Old description", null);
@@ -375,13 +386,14 @@ test "updatePlan: update both title and description by slug" {
 test "updatePlan: fails for non-existent slug" {
     // Methodology: Attempt to update non-existent plan, verify error.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_update_plan_notfound.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to update non-existent plan
     const result = storage.updatePlan("nonexistent", "New Title", null);
@@ -396,13 +408,14 @@ test "deletePlan: successful deletion by slug with no tasks" {
     // Methodology: Create plan with no tasks, delete by slug, verify deletion.
     // Tests basic slug-based deletion.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_plan_slug_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan
     try storage.createPlan("cleanup", "Cleanup Tasks", "", null);
@@ -420,13 +433,14 @@ test "deletePlan: CASCADE deletes all tasks by slug" {
     // Methodology: Create plan with tasks, delete plan by slug,
     // verify all tasks are CASCADE deleted (not orphaned).
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_plan_slug_cascade.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan and tasks
     try storage.createPlan("migration", "Database Migration", "", null);
@@ -464,13 +478,14 @@ test "deletePlan: CASCADE deletes tasks and dependencies by slug" {
     // Methodology: Create plan with tasks that have dependencies,
     // delete plan by slug, verify tasks AND dependencies are CASCADE deleted.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_plan_slug_deps.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plan with tasks and dependencies
     try storage.createPlan("refactor", "Code Refactor", "", null);
@@ -515,13 +530,14 @@ test "deletePlan: CASCADE deletes tasks and dependencies by slug" {
 test "deletePlan: fails for non-existent slug" {
     // Methodology: Attempt to delete non-existent plan by slug, verify error.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_delete_plan_slug_notfound.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Attempt to delete non-existent plan
     const result = storage.deletePlan("nonexistent");
@@ -535,13 +551,14 @@ test "deletePlan: fails for non-existent slug" {
 test "listPlans: returns plans with INTEGER ids and slugs" {
     // Methodology: Create multiple plans, list them, verify all have ids and slugs.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_plans_ids_slugs.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // Create plans
     try storage.createPlan("auth", "Authentication", "", null);
@@ -571,13 +588,14 @@ test "listPlans: returns plans with INTEGER ids and slugs" {
 test "listPlans: empty database returns empty array" {
     // Methodology: List plans in empty database, verify empty array.
     const allocator = std.testing.allocator;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     const temp_path = "/tmp/test_list_plans_empty.db";
-    std.fs.deleteFileAbsolute(temp_path) catch {};
+    std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     var storage = try Storage.init(allocator, temp_path);
     defer storage.deinit();
-    defer std.fs.deleteFileAbsolute(temp_path) catch {};
+    defer std.Io.Dir.deleteFileAbsolute(io, temp_path) catch {};
 
     // List plans in empty database
     const plans = try storage.listPlans(null);
