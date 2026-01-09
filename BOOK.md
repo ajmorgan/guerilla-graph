@@ -5,14 +5,15 @@
 
 ### Overview
 
-Claude Code is powerful out of the box. Anthropic has also given us primitives to extend it:
-hooks for automation, commands and skills for workflows, MCP for external tools, and CLAUDE.md
-for persistent context.
+Claude Code is powerful out of the box. Anthropic has also given us primitives to extend it: hooks
+for automation, commands and skills for workflows, MCP for external tools, and CLAUDE.md for
+persistent context.
 
-This book documents patterns for combining these primitives into a harness that delivers
-consistent quality and coordinates parallel agents.
+This book documents patterns for combining these primitives into a harness that delivers consistent
+quality and coordinates parallel agents.
 
 The core workflow:
+
 1. Generate a maintainable, implementable plan
 2. Audit the plan (up to 5 iterations until no issues remain)
 3. Parse into tasks with dependencies, forming a DAG
@@ -89,11 +90,13 @@ Create `.claude/settings.json`:
 }
 ```
 
-The `jj_prime.md` hook loads Jujutsu workflow context (squash workflow, bookmark management) only if the project uses jj (detected by `.jj/` directory).
+The `jj_prime.md` hook loads Jujutsu workflow context (squash workflow, bookmark management) only if
+the project uses jj (detected by `.jj/` directory).
 
 ### Step 4: Add Engineering Principles
 
-Create `.claude/hooks/engineering_principles.md` with your coding standards. Example for a Java/Gradle project:
+Create `.claude/hooks/engineering_principles.md` with your coding standards. Example for a
+Java/Gradle project:
 
 ```markdown
 # Engineering Principles
@@ -108,13 +111,13 @@ You are a senior software architect who cares deeply about maintainability.
 1. Before changes, explore the codebase systematically
 2. Read the specific code sections you'll be modifying
 3. Look for existing patterns and utilities
-4. Never defer research—get it done
+4. Never defer research. Get it done
 
 ### coding
 1. Audit documentation of files you update (keep concise)
 2. Audit tests of files you update (keep clean)
 3. Apply Single Responsibility Principle
-4. Apply DRY principle—look for existing abstractions
+4. Apply DRY principle; look for existing abstractions
 5. Watch for N+1 query issues
 6. No backwards compatibility unless explicitly asked
 
@@ -128,14 +131,15 @@ The key: include **project-specific commands** and **tool guidance**, not just a
 
 ### Step 5: Copy Slash Commands
 
-The guerilla-graph repo (where you built `gg`) also contains the slash commands. Copy them to your project:
+The guerilla-graph repo (where you built `gg`) also contains the slash commands. Copy them to your
+project:
 
 ```bash
 cp -r /path/to/guerilla-graph/.claude/commands your-project/.claude/
 ```
 
 The `_prompts/` and `_shared/` subdirectories contain reusable modules for the slash commands. You
-don't need to customize these—they work out of the box.
+don't need to customize these; they work out of the box.
 
 ### Step 6: Review CLAUDE.md
 
@@ -168,8 +172,8 @@ claude
 
 ### What Just Happened?
 
-1. **gg workflow** injected on session start—Claude knows how to use the task system
-2. **engineering_principles.md** injected on every prompt—consistent quality
+1. **gg workflow** injected on session start, so Claude knows how to use the task system
+2. **engineering_principles.md** injected on every prompt for consistent quality
 3. **/gg-plan-gen** explored your codebase and created PLAN.md
 4. **/gg-plan-audit** iteratively refined until no critical issues
 5. **/gg-task-gen** converted the plan to gg tasks with dependencies
@@ -194,19 +198,18 @@ Now read on to understand *why* this works.
 
 ### Where Vanilla Claude Code Falls Short
 
-Claude Code's built-in task tracking (TodoWrite) works well for sequential work. But when we want
-to parallelize by running multiple agents on independent tasks, we need more structure.
+Claude Code's built-in task tracking (TodoWrite) works well for sequential work. But when we want to
+parallelize by running multiple agents on independent tasks, we need more structure.
 
-The key insight: tasks have dependencies. Task B might require Task A's output. Tasks C and D
-might both modify the same file. Without tracking these relationships, parallel execution is
-guesswork.
+The key insight: tasks have dependencies. Task B might require Task A's output. Tasks C and D might
+both modify the same file. Without tracking these relationships, parallel execution is guesswork.
 
-A DAG (directed acyclic graph) solves this. Tasks become nodes, dependencies become edges. We
-query for "ready" tasks, those with all blockers complete, and spawn that many agents safely.
+A DAG (directed acyclic graph) solves this. Tasks become nodes, dependencies become edges. We query
+for "ready" tasks, those with all blockers complete, and spawn that many agents safely.
 
-The tool we're missing is a task tracker that knows about dependencies. This could be as simple
-as bash and sqlite. For this workflow, we use gg (Guerilla Graph), a lightweight task tracker
-built specifically for this purpose.
+The tool we're missing is a task tracker that knows about dependencies. This could be as simple as
+bash and sqlite. For this workflow, we use gg (Guerilla Graph), a lightweight task tracker built
+specifically for this purpose.
 
 ---
 
@@ -300,9 +303,8 @@ SessionStart hooks recover context after compaction or new sessions:
 }]
 ```
 
-The `gg workflow` command outputs the full workflow protocol—a ~100 line reference
-covering task ID format, core commands, parallel execution patterns, and DAG rules.
-Sample excerpt:
+The `gg workflow` command outputs the full workflow protocol, a ~100 line reference covering task ID
+format, core commands, parallel execution patterns, and DAG rules. Sample excerpt:
 
 ```
 EXECUTION PHASE (AI Agent Workflow)
@@ -348,8 +350,8 @@ Certain words trigger careful behavior:
 
 ### Thinking Modes
 
-Claude has extended thinking modes that allocate more compute to reasoning before responding.
-The keyword "ultrathink" triggers the deepest reasoning mode—Claude will think longer and more
+Claude has extended thinking modes that allocate more compute to reasoning before responding. The
+keyword "ultrathink" triggers the deepest reasoning mode, and Claude will think longer and more
 carefully before acting.
 
 Put "ultrathink" at the top of your engineering_principles.md:
@@ -362,9 +364,9 @@ ultrathink
 You are a senior software architect...
 ```
 
-Now every prompt triggers deep reasoning. Yes, it costs more tokens. Yes, it's worth it.
-The difference in code quality—especially for multi-step planning and architectural
-decisions—is significant.
+Now every prompt triggers deep reasoning. Yes, it costs more tokens. Yes, it's worth it. The
+difference in code quality, especially for multi-step planning and architectural decisions, is
+significant.
 
 **When to use ultrathink:** Always. The cost is negligible compared to fixing bad code.
 
@@ -412,7 +414,7 @@ auth:001 (Setup) ─────┬──→ auth:002 (User entity) ──┬─
                       └──→ auth:003 (Role entity) ──┘
 ```
 
-After completing auth:001, both auth:002 and auth:003 are ready—they can run in
+After completing auth:001, both auth:002 and auth:003 are ready. They can run in
 parallel. auth:004 waits for both.
 
 **Ready task count = parallelism level.**
@@ -428,7 +430,7 @@ Five ready tasks means you can spawn five agents.
 5. /gg-execute <plan>         → Parallel agents, compilation gates
 ```
 
-Each step has quality gates. No skipping audits—they prevent rework later.
+Each step has quality gates. No skipping audits; they prevent rework later.
 
 ### Wave Execution
 
