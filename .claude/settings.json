@@ -6,6 +6,10 @@
           {
             "type": "command",
             "command": "gg workflow"
+          },
+          {
+            "type": "command",
+            "command": "[ -d .jj ] && cat .claude/hooks/jj_prime.md 2>/dev/null"
           }
         ]
       }
