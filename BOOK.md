@@ -214,26 +214,29 @@ built and dogfooded specifically to build out this workflow.
 
 ### Engineering Principles Injection
 
-The core pattern: inject your standards into every prompt via hooks.
+The core pattern: inject our standards into every prompt via hooks.
 
 ```json
 // .claude/settings.json
 {
   "hooks": {
+    "SessionStart": [{
+      "hooks": [{ "type": "command", "command": "gg workflow" }]
+    }],
     "UserPromptSubmit": [{
-      "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md" }]
+      "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null" }]
     }],
     "SubagentStart": [{
       "hooks": [{
         "type": "command",
-        "command": "gg workflow; cat .claude/hooks/engineering_principles.md"
+        "command": "gg workflow 2>/dev/null; cat .claude/hooks/engineering_principles.md 2>/dev/null"
       }]
     }]
   }
 }
 ```
 
-Now every response—yours and every agent's—sees the same engineering principles. No drift.
+Now every response, including agents, sees the same engineering principles. No drift.
 
 **What goes in engineering_principles.md:**
 - Coding standards (assertions, function length limits, explicit types)
@@ -289,15 +292,15 @@ This catches errors that would otherwise require a compile cycle to find.
 
 ### Context Recovery
 
-SessionStart hooks can recover context after compaction or new sessions:
+SessionStart hooks recover context after compaction or new sessions:
 
 ```json
-"SessionStart": [
-  { "matcher": "", "hooks": [{ "type": "command", "command": "gg workflow" }] }
-]
+"SessionStart": [{
+  "hooks": [{ "type": "command", "command": "gg workflow" }]
+}]
 ```
 
-The `gg workflow` command outputs the full workflow protocol—how to find work,
+The `gg workflow` command outputs the full workflow protocol: how to find work,
 claim tasks, complete them. Claude reads this on every session start and knows
 how to proceed.
 
