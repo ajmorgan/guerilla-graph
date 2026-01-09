@@ -29,7 +29,8 @@ The core workflow:
 
 - An autonomous framework; we empower engineers, using their expertise to keep
   the AI aligned
-- VCS integration; we handle commits manually (the jj squash workflow works well)
+- VCS integration; we handle commits manually
+  (the jj squash workflow is preferred by the author)
 - Building multiple features in parallel; we use parallel agents on a single
   feature, as task dependencies allow
 
@@ -70,7 +71,10 @@ Create `.claude/settings.json`:
 {
   "hooks": {
     "SessionStart": [{
-      "hooks": [{ "type": "command", "command": "gg workflow" }]
+      "hooks": [
+        { "type": "command", "command": "gg workflow" },
+        { "type": "command", "command": "[ -d .jj ] && cat .claude/hooks/jj_prime.md 2>/dev/null" }
+      ]
     }],
     "UserPromptSubmit": [{
       "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null" }]
@@ -84,6 +88,8 @@ Create `.claude/settings.json`:
   }
 }
 ```
+
+The `jj_prime.md` hook loads Jujutsu workflow context (squash workflow, bookmark management) only if the project uses jj (detected by `.jj/` directory).
 
 ### Step 4: Add Engineering Principles
 
@@ -128,22 +134,15 @@ The guerilla-graph repo (where you built `gg`) also contains the slash commands.
 cp -r /path/to/guerilla-graph/.claude/commands your-project/.claude/
 ```
 
-The `_prompts/` and `_shared/` subdirectories contain reusable modules for the slash commands. You don't need to customize these—they work out of the box.
+The `_prompts/` and `_shared/` subdirectories contain reusable modules for the slash commands. You
+don't need to customize these—they work out of the box.
 
-### Step 6: Configure CLAUDE.md
+### Step 6: Review CLAUDE.md
 
-Create `CLAUDE.md` in your project root with:
-
-```markdown
-# CLAUDE.md
-
-## Build Commands
-- Build: `your-build-command`
-- Test: `your-test-command`
-
-## Architecture
-[Brief description of your codebase structure]
-```
+If you haven't already, run `/init` in Claude Code to create `CLAUDE.md` with your project's build
+commands, architecture, and patterns. Review the generated file and refine as needed. Claude learns
+your codebase automatically, but domain-specific context (business rules, team conventions) may need
+manual additions.
 
 ### Step 7: Run Your First Feature
 
@@ -332,20 +331,20 @@ Claude reads this on every session start and knows how to proceed.
 
 Certain words trigger careful behavior:
 
-| Word | Effect |
-|------|--------|
-| "maintainability" | Triggers careful design, avoids clever tricks |
-| "implementability" | Forces concrete thinking, verifiable steps |
-| "DRY" | Prevents duplication, looks for existing patterns |
-| "YAGNI" | Stops over-engineering, feature creep |
+| Word               | Effect                                            |
+| ------------------ | ------------------------------------------------- |
+| "maintainability"  | Triggers careful design, avoids clever tricks     |
+| "implementability" | Forces concrete thinking, verifiable steps        |
+| "DRY"              | Prevents duplication, looks for existing patterns |
+| "YAGNI"            | Stops over-engineering, feature creep             |
 
 ### Words That Don't
 
-| Word | Problem |
-|------|---------|
-| "robust" | Vague, leads to defensive bloat |
-| "comprehensive" | Invites scope creep |
-| "flexible" | Abstraction bait, premature generalization |
+| Word            | Problem                                    |
+| --------------- | ------------------------------------------ |
+| "robust"        | Vague, leads to defensive bloat            |
+| "comprehensive" | Invites scope creep                        |
+| "flexible"      | Abstraction bait, premature generalization |
 
 ### Thinking Modes
 
@@ -469,6 +468,7 @@ jj restore <files>  # or: git checkout <files>
   settings.local.json        # User overrides (gitignored)
   hooks/
     engineering_principles.md    # Injected on every prompt
+    jj_prime.md                  # Jujutsu workflow (SessionStart, if .jj/ exists)
   commands/
     README.md                # Documentation for slash commands
     gg-plan-gen.md
@@ -501,14 +501,14 @@ CLAUDE.md                    # Domain memory, architecture, patterns
 
 ### Quick Patterns
 
-| Situation | Pattern |
-|-----------|---------|
-| Quality drifting | Add to engineering_principles.md |
-| Repeated workflow | Create a command |
-| Need domain verification | Add MCP server |
-| Context lost | Add SessionStart hook |
-| Parallel work needed | Use gg with dependencies |
-| Audit looping | Set max iterations |
+| Situation                | Pattern                          |
+| ------------------------ | -------------------------------- |
+| Quality drifting         | Add to engineering_principles.md |
+| Repeated workflow        | Create a command                 |
+| Need domain verification | Add MCP server                   |
+| Context lost             | Add SessionStart hook            |
+| Parallel work needed     | Use gg with dependencies         |
+| Audit looping            | Set max iterations               |
 
 ---
 
