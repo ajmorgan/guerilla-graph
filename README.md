@@ -79,13 +79,13 @@ gg ready --json       # JSON output for scripting
 
 ## CLI Commands
 
-| Category | Commands |
-|----------|----------|
-| **Smart Commands** | `new`, `show`, `update` (auto-detect plan vs task) |
-| **Task Shortcuts** | `start`, `complete` |
-| **Dependencies** | `dep add`, `dep remove`, `dep blockers`, `dep dependents` |
-| **Queries** | `ready`, `blocked`, `ls`, `task ls`, `plan ls` |
-| **System** | `init`, `workflow`, `doctor`, `help` |
+| Category           | Commands                                                  |
+| ------------------ | --------------------------------------------------------- |
+| **Smart Commands** | `new`, `show`, `update` (auto-detect plan vs task)        |
+| **Task Shortcuts** | `start`, `complete`                                       |
+| **Dependencies**   | `dep add`, `dep remove`, `dep blockers`, `dep dependents` |
+| **Queries**        | `ready`, `blocked`, `ls`, `task ls`, `plan ls`            |
+| **System**         | `init`, `workflow`, `doctor`, `help`                      |
 
 All commands support `--json` for machine-readable output.
 
@@ -95,11 +95,11 @@ All commands support `--json` for machine-readable output.
 
 Guerilla Graph integrates with Claude Code through hooks in `.claude/settings.json`:
 
-| Hook | Trigger | Purpose |
-|------|---------|---------|
-| `SessionStart` | Session begins | Loads `gg workflow` context |
-| `UserPromptSubmit` | Every message | Injects engineering principles |
-| `SubagentStart` | Agent spawns | Ensures agents follow same standards |
+| Hook               | Trigger        | Purpose                              |
+| ------------------ | -------------- | ------------------------------------ |
+| `SessionStart`     | Session begins | Loads `gg workflow` context          |
+| `UserPromptSubmit` | Every message  | Injects engineering principles       |
+| `SubagentStart`    | Agent spawns   | Ensures agents follow same standards |
 
 ### Slash Commands
 
@@ -153,13 +153,22 @@ src/
 ├── root.zig              # Library module root (public API)
 ├── cli.zig               # Command parsing
 ├── types.zig             # Task, Plan, Dependency structs
+├── utils.zig             # Task ID parsing, kebab-case validation
+├── c_imports.zig         # C bindings (SQLite)
 ├── storage.zig           # SQLite wrapper + schema
 ├── sql_executor.zig      # SQL execution layer
-├── task_storage*.zig     # Task CRUD, lifecycle, queries
+├── task_storage.zig      # Task storage aggregator
+├── task_storage_crud.zig # Task CRUD operations
+├── task_storage_lifecycle.zig  # Task start/complete
+├── task_storage_queries.zig    # Task queries (ready, blocked)
 ├── plan_storage.zig      # Plan operations
 ├── deps_storage.zig      # Dependency operations
 ├── task_manager.zig      # Task orchestration
-├── format*.zig           # Output formatting (task, plan, system)
+├── format.zig            # Output formatting aggregator
+├── format_task.zig       # Task formatters
+├── format_plan.zig       # Plan formatters
+├── format_system.zig     # System formatters
+├── format_common.zig     # Shared formatting helpers
 ├── health_check.zig      # Database health checks
 ├── commands/             # Command implementations
 │   ├── task*.zig         # new, start, complete, show, update, delete, list
@@ -168,7 +177,8 @@ src/
 │   ├── ready.zig
 │   └── ...
 └── help/                 # Help text
-    └── content/          # Per-command help
+    ├── help.zig          # Help system entry point
+    └── content/          # Per-command help content
 ```
 
 ### Database Schema
@@ -209,14 +219,7 @@ Enable rich implementation context for agents
 
 ## Engineering Principles
 
-The project follows Tiger Style (see `TIGER_STYLE.md`):
-
-- **Safety first**: Assertions, explicit error handling, bounded loops
-- **Zero dependencies**: Only Zig toolchain + system libraries
-- **Zero technical debt**: Implement correctly the first time
-- **70-line functions**: Hard limit enforced
-- **Explicit types**: `u32`, `i64` instead of `usize` in business logic
-- **No haiku agents**: Quality is our first priority; use inherited or explicit sonnet/opus
+The project follows Tiger Style from TigerBeetle (see `TIGER_STYLE.md`):
 
 ## License
 

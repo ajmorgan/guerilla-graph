@@ -1,7 +1,7 @@
 # agentic coding
 .claude/settings.local.json
-.beads/
-.gg/audits/
+.gg/
+.gg-plan-desc.md
 PLAN.md
 
 # zig
