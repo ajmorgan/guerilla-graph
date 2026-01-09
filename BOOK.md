@@ -52,15 +52,18 @@ Create `.claude/settings.json`:
 ```json
 {
   "hooks": {
-    "SessionStart": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "gg workflow" }] }
-    ],
-    "UserPromptSubmit": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null" }] }
-    ],
-    "SubagentStart": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null" }] }
-    ]
+    "SessionStart": [{
+      "hooks": [{ "type": "command", "command": "gg workflow" }]
+    }],
+    "UserPromptSubmit": [{
+      "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null" }]
+    }],
+    "SubagentStart": [{
+      "hooks": [{
+        "type": "command",
+        "command": "gg workflow 2>/dev/null; cat .claude/hooks/engineering_principles.md 2>/dev/null"
+      }]
+    }]
   }
 }
 ```
@@ -209,12 +212,15 @@ The core pattern: inject your standards into every prompt via hooks.
 // .claude/settings.json
 {
   "hooks": {
-    "UserPromptSubmit": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md" }] }
-    ],
-    "SubagentStart": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md" }] }
-    ]
+    "UserPromptSubmit": [{
+      "hooks": [{ "type": "command", "command": "cat .claude/hooks/engineering_principles.md" }]
+    }],
+    "SubagentStart": [{
+      "hooks": [{
+        "type": "command",
+        "command": "gg workflow; cat .claude/hooks/engineering_principles.md"
+      }]
+    }]
   }
 }
 ```

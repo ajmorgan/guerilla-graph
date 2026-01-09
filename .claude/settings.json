@@ -2,7 +2,6 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
@@ -26,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat .claude/hooks/engineering_principles.md 2>/dev/null"
+            "command": "gg workflow 2>/dev/null; cat .claude/hooks/engineering_principles.md 2>/dev/null"
           }
         ]
       }
