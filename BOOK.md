@@ -1,5 +1,5 @@
 <!-- vim: set textwidth=100 formatoptions=jcqnt: -->
-# Harness Engineering with Claude Code
+# WIP: Harness Engineering with Claude Code
 
 ## About This Book
 
@@ -49,7 +49,7 @@ Get running in 5 minutes. Understand why later.
 
 ```bash
 # Build from source (requires Zig 0.14+)
-cd guerilla_graph
+cd guerilla-graph
 zig build -Doptimize=ReleaseFast
 cp zig-out/bin/gg ~/.local/bin/  # or anywhere in PATH
 ```
@@ -122,11 +122,13 @@ The key: include **project-specific commands** and **tool guidance**, not just a
 
 ### Step 5: Copy Slash Commands
 
-Copy the `.claude/commands/` directory from guerilla_graph to your project:
+The guerilla-graph repo (where you built `gg`) also contains the slash commands. Copy them to your project:
 
 ```bash
-cp -r /path/to/guerilla_graph/.claude/commands your-project/.claude/
+cp -r /path/to/guerilla-graph/.claude/commands your-project/.claude/
 ```
+
+The `_prompts/` and `_shared/` subdirectories contain reusable modules for the slash commands. You don't need to customize these—they work out of the box.
 
 ### Step 6: Configure CLAUDE.md
 
@@ -203,10 +205,9 @@ guesswork.
 A DAG (directed acyclic graph) solves this. Tasks become nodes, dependencies become edges. We
 query for "ready" tasks, those with all blockers complete, and spawn that many agents safely.
 
-The tool we're missing to create our workflow is a task tracker that knows about dependencies. This
-could be as simple as some bash and sqlite, or something heavier like Beads which has git
-integration.  For our workflow, we're going to use gg (Guerilla Graph), a lightweight task tracker
-built and dogfooded specifically to build out this workflow.
+The tool we're missing is a task tracker that knows about dependencies. This could be as simple
+as bash and sqlite. For this workflow, we use gg (Guerilla Graph), a lightweight task tracker
+built specifically for this purpose.
 
 ---
 
@@ -300,9 +301,28 @@ SessionStart hooks recover context after compaction or new sessions:
 }]
 ```
 
-The `gg workflow` command outputs the full workflow protocol: how to find work,
-claim tasks, complete them. Claude reads this on every session start and knows
-how to proceed.
+The `gg workflow` command outputs the full workflow protocol—a ~100 line reference
+covering task ID format, core commands, parallel execution patterns, and DAG rules.
+Sample excerpt:
+
+```
+EXECUTION PHASE (AI Agent Workflow)
+  Find work, claim tasks, execute, and complete:
+
+  - Find work: gg ready <plan-slug> --json
+  - Spawn agents: N agents for N ready tasks (maximize parallelism)
+  - Claim and read: gg start <slug:NNN> --json
+  - Execute work
+  - Complete: gg complete <slug:NNN>
+  - Repeat until feature complete
+
+CORE RULES:
+  - Track ALL work in gg (no TodoWrite tool, no markdown TODOs)
+  - Use 'gg ready' to find work (never guess task IDs)
+  - Ready task count = parallelism capacity (5 ready = 5 agents)
+```
+
+Claude reads this on every session start and knows how to proceed.
 
 ---
 
@@ -329,15 +349,25 @@ Certain words trigger careful behavior:
 
 ### Thinking Modes
 
-Default thinking often skips steps. For complex work, trigger deeper reasoning:
+Claude has extended thinking modes that allocate more compute to reasoning before responding.
+The keyword "ultrathink" triggers the deepest reasoning mode—Claude will think longer and more
+carefully before acting.
 
-- "ultrathink" in your engineering principles hook
-- Explicit in prompts for architecture decisions
-- Worth the extra tokens for multi-step planning
+Put "ultrathink" at the top of your engineering_principles.md:
 
-**When to use ultrathink**
+```markdown
+# Engineering Principles
 
-- Short answer: always
+ultrathink
+
+You are a senior software architect...
+```
+
+Now every prompt triggers deep reasoning. Yes, it costs more tokens. Yes, it's worth it.
+The difference in code quality—especially for multi-step planning and architectural
+decisions—is significant.
+
+**When to use ultrathink:** Always. The cost is negligible compared to fixing bad code.
 
 ### Audit Convergence
 
@@ -439,21 +469,31 @@ jj restore <files>  # or: git checkout <files>
   settings.local.json        # User overrides (gitignored)
   hooks/
     engineering_principles.md    # Injected on every prompt
-    planning_context.md          # Planning mode context
   commands/
+    README.md                # Documentation for slash commands
     gg-plan-gen.md
     gg-plan-audit.md
     gg-task-gen.md
     gg-task-audit.md
     gg-execute.md
     _prompts/                # Agent prompt templates
+      explore-codebase.md
       implement-task.md
       audit-task.md
+      audit-plan.md
       review-work.md
     _shared/                 # Reusable modules
       project-context.md
       dependency-analysis.md
       quality-criteria.md
+      quality-standards.md
+      code-verification.md
+      file-verification.md
+      control-flow.md
+      fix-patterns.md
+      json-parsing.md
+      planning-checklist.md
+      task-template.md
 CLAUDE.md                    # Domain memory, architecture, patterns
 .gg/
   tasks.db                   # SQLite: plans, tasks, dependencies
