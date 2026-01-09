@@ -175,10 +175,11 @@ The `gg` CLI uses a resource-oriented command structure with the pattern `gg <re
 
 1. **Plan management**: `plan new`, `plan show`, `plan ls`, `plan update`, `plan delete`
 2. **Task management**:
-   - Canonical forms: `task new`, `task start`, `task complete`, `task reopen`, `task update`, `task show`, `task delete`, `task ls`
+   - Canonical forms: `task new`, `task start`, `task complete`, `task update`, `task show`, `task delete`, `task ls`
    - Shortcuts (aliases): `start`, `complete`, `show`, `update` (all map to `task <action>`)
+   - Note: To reopen a completed task, use `task update <id> --status open`
 3. **Dependency management**: `dep add`, `dep remove`, `dep blockers`, `dep dependents`
-4. **Query shortcuts**: `ready`, `blocked`, `stats`, `bottlenecks`, `parallelism`
+4. **Query shortcuts**: `ready`, `blocked`, `ls`
 5. **System commands**: `init`, `workflow`, `doctor`, `help`
 
 **Performance critical operations:**
@@ -453,7 +454,7 @@ gg dep dependents auth:001                   # What will this unblock?
 # Query system state (displays formatted IDs)
 gg task ls --status in_progress           # What's being worked on?
 gg blocked                                   # What's waiting?
-gg stats                                     # Overall progress
+gg ready                                     # What can be started?
 
 # Backwards compatibility: internal IDs still work
 gg task show 1              # Equivalent to auth:001 (if internal ID = 1)
