@@ -1,26 +1,43 @@
+<!-- vim: set textwidth=100 formatoptions=jcqnt: -->
 # Harness Engineering with Claude Code
 
 ## About This Book
 
-### Why
+### Overview
 
-Claude Code is powerful out of the box, but it hits walls: context loss mid-feature, agents that drift, no coordination for parallel work. This book documents the harness I built to solve these problems—patterns for injecting consistent quality, managing parallel agents, and delivering features at speed.
+Claude Code is powerful out of the box. Anthropic has also given us primitives to extend it:
+hooks for automation, commands and skills for workflows, MCP for external tools, and CLAUDE.md
+for persistent context.
+
+This book documents patterns for combining these primitives into a harness that delivers
+consistent quality and coordinates parallel agents.
+
+The core workflow:
+1. Generate a maintainable, implementable plan
+2. Audit the plan (up to 5 iterations until no issues remain)
+3. Parse into tasks with dependencies, forming a DAG
+4. Audit each task in parallel (up to 5 iterations)
+5. Execute in parallel, using the DAG to find unblocked work
 
 ### Goals
 
 - Parallelized agent workflows for delivering features
-- Consistent code quality through injection patterns
+- Consistent code quality through hook injection patterns
 - Low-drag environment for a single developer
 
 ### Non-Goals
 
-- An autonomous framework; the goal is to enhance engineers, using their expertise to keep the AI aligned
-- VCS integration; the developer handles commits, the harness handles code
-- Building multiple features in parallel; we use parallel agents on a single feature, as task dependencies allow
+- An autonomous framework; we empower engineers, using their expertise to keep
+  the AI aligned
+- VCS integration; we handle commits manually (the jj squash workflow works well)
+- Building multiple features in parallel; we use parallel agents on a single
+  feature, as task dependencies allow
 
 ### Prerequisites
 
-Basic familiarity with Claude Code: context windows, compaction, agents. If terms like "token limit" or "subagent" are unfamiliar, start with the [Anthropic documentation](https://docs.anthropic.com).
+Basic familiarity with Claude Code: context windows, compaction, agents. If
+terms like "token limit" or "subagent" are unfamiliar, start with
+the [Anthropic documentation](https://docs.anthropic.com).
 
 ---
 
@@ -176,29 +193,20 @@ Now read on to understand *why* this works.
 
 ### Where Vanilla Claude Code Falls Short
 
-**Context loss mid-feature**
+Claude Code's built-in task tracking (TodoWrite) works well for sequential work. But when we want
+to parallelize by running multiple agents on independent tasks, we need more structure.
 
-You're three hours into implementing a feature. The conversation compacts. Suddenly Claude doesn't remember the architectural decisions you made, the files you've already modified, or why you chose approach A over B. You spend the next hour re-explaining.
+The key insight: tasks have dependencies. Task B might require Task A's output. Tasks C and D
+might both modify the same file. Without tracking these relationships, parallel execution is
+guesswork.
 
-**Quality drift**
+A DAG (directed acyclic graph) solves this. Tasks become nodes, dependencies become edges. We
+query for "ready" tasks, those with all blockers complete, and spawn that many agents safely.
 
-Without consistent guidance, code quality varies wildly. One response follows your patterns perfectly. The next introduces abstractions you didn't ask for, ignores your naming conventions, or over-engineers a simple fix.
-
-**No coordination for parallel work**
-
-You want to speed up a 10-task feature by running agents in parallel. But TodoWrite is single-threaded... no dependency awareness, no way to know which tasks can run concurrently without stepping on each other's files.
-
-**Agent isolation**
-
-You spawn an agent to implement a task. It starts fresh—no knowledge of the conversation context, the decisions made, or the patterns established. It makes different choices than you would have guided it toward.
-
-### What We're Solving For
-
-A harness that:
-- Injects engineering principles into every response (human and agent)
-- Tracks tasks with dependency awareness for safe parallelism
-- Provides reusable workflows that encode your process
-- Recovers context automatically after compaction or session start
+The tool we're missing to create our workflow is a task tracker that knows about dependencies. This
+could be as simple as some bash and sqlite, or something heavier like Beads which has git
+integration.  For our workflow, we're going to use gg (Guerilla Graph), a lightweight task tracker
+built and dogfooded specifically to build out this workflow.
 
 ---
 
@@ -267,9 +275,11 @@ args:
 
 ### MCP for Domain Verification
 
-MCP servers provide tools beyond Claude's built-ins. The pattern: use them for domain-specific verification.
+MCP servers provide tools beyond Claude's built-ins. The pattern: use them for
+domain-specific verification.
 
-Example: `zig-docs` MCP server for Zig standard library lookup. Instead of Claude guessing at APIs, it can verify:
+Example: `zig-docs` MCP server for Zig standard library lookup. Instead of
+Claude guessing at APIs, it can verify:
 
 ```
 Use the zig-docs MCP server to verify ArrayList API before using it.
@@ -287,7 +297,9 @@ SessionStart hooks can recover context after compaction or new sessions:
 ]
 ```
 
-The `gg workflow` command outputs the full workflow protocol—how to find work, claim tasks, complete them. Claude reads this on every session start and knows how to proceed.
+The `gg workflow` command outputs the full workflow protocol—how to find work,
+claim tasks, complete them. Claude reads this on every session start and knows
+how to proceed.
 
 ---
 
@@ -333,7 +345,9 @@ Iterative refinement with a stopping condition:
 3. If Critical or High issues exist, fix and re-audit
 4. Max 5 iterations, then stop and report
 
-The key insight: **set a max iteration limit**. Should the audit not converge, the engineer must make a judgement call.  Another round of audits, or to move forward.
+The key insight: **set a max iteration limit**. Should the audit not converge,
+the engineer must make a judgement call. Another round of audits, or to move
+forward.
 
 ### Course Correction Patterns
 
@@ -358,16 +372,19 @@ The key insight: **set a max iteration limit**. Should the audit not converge, t
 
 ### DAG-Based Task Management
 
-Tasks as nodes, dependencies as edges. A task is "ready" when all its blockers are complete.
+Tasks as nodes, dependencies as edges. A task is "ready" when all its blockers
+are complete.
 
 ```
 auth:001 (Setup) ─────┬──→ auth:002 (User entity) ──┬──→ auth:004 (Tests)
                       └──→ auth:003 (Role entity) ──┘
 ```
 
-After completing auth:001, both auth:002 and auth:003 are ready—they can run in parallel. auth:004 waits for both.
+After completing auth:001, both auth:002 and auth:003 are ready—they can run in
+parallel. auth:004 waits for both.
 
-**Ready task count = parallelism level.** Five ready tasks means you can spawn five agents.
+**Ready task count = parallelism level.**
+Five ready tasks means you can spawn five agents.
 
 ### The GG Workflow
 
