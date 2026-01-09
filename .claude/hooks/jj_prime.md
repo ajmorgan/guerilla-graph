@@ -52,7 +52,7 @@ jj git push --bookmark feature/ACON-1234 --allow-new
 ```bash
 jj bookmark create ACON-1234
 jj new                             # Create new change on top of bookmark
-bd update <bead-id> --status=in_progress  # Track in beads
+gg start <task-id>                 # Claim task in gg
 ```
 
 **2. Make changes & squash frequently:**
@@ -67,12 +67,10 @@ Created V1.0.32-35 for feature X"
 jj squash -m "Phase 2: Entity updates"
 ```
 
-**3. Complete work & close beads:**
+**3. Complete work:**
 ```bash
-bd close <bead-id> --reason "Done"  # Close bead
-jj squash -m "Phase 3: Final implementation
-
-Completed: <bead-id>"
+jj squash -m "Phase 3: Final implementation"
+gg complete <task-id>              # Mark task done in gg
 ```
 
 **4. Push for PR:**
@@ -167,20 +165,17 @@ jj new                              # Create new change now
 # Your changes stay in previous @, squash when ready
 ```
 
-## Integration with Beads
+## Integration with gg
 
-The squash workflow integrates with beads tracking:
+The squash workflow integrates with gg task tracking:
 
 1. Create bookmark: `jj bookmark create ACON-1234`
 2. Create new change: `jj new`
-3. Claim bead: `bd update <id> --status=in_progress`
+3. Claim task: `gg start <task-id>`
 4. Work & squash: Multiple `jj squash` commands for phases
-5. Close bead: `bd close <id> --reason "Done"`
-6. Final squash: Include bead ID in commit message
+5. Complete task: `gg complete <task-id>`
 
 **Commit message format:**
 ```
 Phase N: Description
-
-Completed: <bead-id>
 ```
