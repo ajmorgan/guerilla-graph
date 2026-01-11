@@ -55,7 +55,7 @@ Step 2: Verify Files
   Print: "✅ Files verified: {count}"
 
 Step 3: Understand Syntax
-  Bash("gg plan new --help && gg task new --help && gg dep add --help")
+  Bash("gg workflow")  # Authoritative syntax reference
   Store syntax
 
 Step 4: Create Plan
@@ -80,7 +80,7 @@ Step 5: Create Tasks
     VerifyCodeQuality(task_desc, engineering_principles) or Fix & Re-verify
 
     Write("/tmp/task-{n}.md", task_desc)
-    result = Bash("gg task new --title '{title}' --plan {plan_slug} --description-file /tmp/task-{n}.md")
+    result = Bash("gg new {plan_slug}: --title '{title}' --description-file /tmp/task-{n}.md")
     task_ids.append(result.task_id)
 
 Step 6: Build Dependencies
@@ -144,7 +144,7 @@ Run checks from **quality-criteria.md**:
 **5e. Create Task**
 Only after quality verification passes:
 ```bash
-gg task new --title "[Title]" --plan {plan_slug} --description-file /tmp/task-{n}.md
+gg new {plan_slug}: --title "[Title]" --description-file /tmp/task-{n}.md
 ```
 
 Capture task ID (format: `{plan_slug}:NNN`) for dependencies.
@@ -171,6 +171,7 @@ Parse PLAN.md for "after Phase X completes", "requires Phase Y", "depends on tas
 
 Plan: {plan_slug} - {title}
 Project: {language} ({build_command})
+Source: {spec_file}
 
 Tasks Created: {count}
 ├─ Phase 1: {phase1_tasks}
@@ -193,6 +194,102 @@ Dependencies Created: {count}
 Next Steps:
 1. Optional audit: /gg-task-audit {plan_slug} {spec_file}
 2. Execute: /gg-execute {plan_slug}
+```
+
+---
+
+## Inline Algorithms
+
+Command-specific operations not defined in shared modules:
+
+### LoadSharedModules()
+```
+modules = {}
+modules.quality = Read(".claude/commands/_shared/quality-criteria.md")
+modules.template = Read(".claude/commands/_shared/task-template.md")
+modules.deps = Read(".claude/commands/_shared/dependency-analysis.md")
+modules.files = Read(".claude/commands/_shared/file-verification.md")
+modules.code = Read(".claude/commands/_shared/code-verification.md")
+modules.principles = Read(".claude/hooks/engineering_principles.md")
+Return modules
+```
+
+### ParsePhases(spec)
+```
+phases = []
+For each "### Phase N:" or "## Phase N:" header in spec:
+  phase = {
+    number: N,
+    name: text after "Phase N:",
+    content: text until next phase header,
+    files: ExtractFilePaths(content),
+    goal: first line after header
+  }
+  Add phase to phases
+Return phases
+```
+
+### ExtractFilePaths(text)
+```
+paths = []
+patterns = [
+  /`([a-zA-Z0-9_/.-]+\.[a-z]+):(\d+)`/,  # `file.ext:123`
+  /`([a-zA-Z0-9_/.-]+\.[a-z]+)`/          # `file.ext`
+]
+For each pattern match in text:
+  path = {
+    file: match[1],
+    line: match[2] or null
+  }
+  Add path to paths (deduplicated)
+Return paths
+```
+
+### ExtractFiles(phase)
+```
+Return ExtractFilePaths(phase.content)
+```
+
+### FormatPlanDescription(spec)
+```
+Extract from spec:
+  - Overview section (first 2-3 paragraphs)
+  - Goals section
+  - Architecture summary
+Format as markdown suitable for gg plan description
+Return formatted string
+```
+
+### BuildTaskDescription(phase, snippets, template)
+```
+Use task-template.md structure
+Fill in:
+  - YAML frontmatter:
+    - complexity: infer from phase size
+    - language: from project config
+    - files: from phase.files
+    - validation_commands: from project config
+  - ## What: from phase.goal
+  - ## Why: from phase rationale or plan context
+  - ## Where: from phase.files with line numbers
+  - ## How: step-by-step from phase.content + snippets
+Return formatted task description
+```
+
+### ParseDependencyProse(spec)
+```
+deps = []
+patterns = [
+  "after Phase X completes",
+  "requires Phase Y",
+  "depends on task Z",
+  "blocked by",
+  "must complete first"
+]
+For each match in spec:
+  Extract dependent and blocker from context
+  Add {dependent, blocker} to deps
+Return deps
 ```
 
 ---

@@ -276,6 +276,59 @@ Review returns:
 
 ---
 
+## Inline Algorithms
+
+Command-specific operations not defined in shared modules:
+
+### ValidatePlan(plan_slug)
+```
+result = Bash("gg show {plan_slug} --json")
+If result contains "not found" or error:
+  Error: "Plan '{plan_slug}' does not exist"
+  Suggest: "Run `gg plan ls` to see available plans"
+  EXIT
+Return parsed plan info
+```
+
+### ShowPlanSummary()
+```
+Print:
+  "📋 Executing Plan: {plan_slug}"
+  "  - Title: {plan.title}"
+  "  - Tasks: {total_count} total, {open_count} open, {completed_count} completed"
+  "  - Ready: {ready_count} (parallelism level)"
+```
+
+### CheckAllComplete()
+```
+tasks = Bash("gg task ls --plan {plan_slug} --json")
+For each task in tasks:
+  If task.status != "completed":
+    Return false
+Return true
+```
+
+### ShowBlockedTasks()
+```
+blocked = Bash("gg blocked --plan {plan_slug} --json")
+Print: "⚠️ Blocked tasks:"
+For each task in blocked:
+  blockers = Bash("gg dep blockers {task.id} --json")
+  Print: "  - {task.id}: blocked by {blockers}"
+```
+
+### Format(template, task_json)
+```
+variables = {
+  "task_id": task_json.id,
+  "title": task_json.title,
+  "description": task_json.description
+}
+Return FormatPrompt(template, variables)
+```
+
+---
+
 ## Error Handling
 
 **Plan not found**: Error, suggest `gg plan list`, EXIT

@@ -92,6 +92,21 @@ Use `.claude/commands/_prompts/explore-codebase.md` template.
 
 If ANY fail: STOP - fix, retry
 
+**Quality Validation** (before Write):
+```
+result = ValidatePlanFormat(plan_content)
+If not result.is_valid:
+  STOP - "Plan missing required sections: {result.missing_sections}"
+  Fix sections, retry
+
+# Check against quality-criteria.md Five Criteria:
+For each section in plan:
+  If section has placeholder text ("TBD", "TODO", "[fill in]"):
+    STOP - "Plan has placeholders in section: {section}"
+  If section < 50 chars:
+    Warn - "Section may be too brief: {section}"
+```
+
 ---
 
 **PLAN.md Structure**:
@@ -205,6 +220,92 @@ Next:
 5. Autonomous exploration (discover, don't ask)
 6. Split success criteria (automated vs manual)
 7. Follow architecture (don't invent patterns)
+
+## Inline Algorithms
+
+Command-specific operations not defined in shared modules:
+
+### ReadFeatureInput(input)
+```
+If input looks like a file path (contains "/" or ".md"):
+  TRY: content = Read(input)
+  If success: Return content
+Return input as-is (treat as direct text)
+```
+
+### ParseGoals(feature_text)
+```
+goals = []
+For each line in feature_text:
+  If line contains "should", "will enable", "allows", "must":
+    Extract goal statement
+    Add to goals
+Return goals
+```
+
+### ParseNonGoals(feature_text)
+```
+non_goals = []
+For each line in feature_text:
+  If line contains "out of scope", "not included", "won't", "will not":
+    Extract non-goal statement
+    Add to non_goals
+Return non_goals
+```
+
+### ParseCriteria(feature_text)
+```
+criteria = []
+For each line in feature_text:
+  If line contains "when X", "verifies that", "success if", "complete when":
+    Extract criterion
+    Add to criteria
+Return criteria
+```
+
+### ExecuteExploration(prompt_template, feature, project_config)
+```
+1. prompt = FormatPrompt(prompt_template, {feature, project_config})
+2. result = Task(subagent_type="general-purpose", prompt=prompt)
+3. Return result
+```
+
+### CollectOpenQuestions()
+```
+questions = []
+Scan current context for:
+  - "⚠️ Question" markers from earlier steps
+  - Ambiguous requirements without clear answers
+  - Technical decisions needing user input
+Return questions
+```
+
+### CanResearch(question)
+```
+Return true if question is about:
+  - Existing code patterns
+  - File locations
+  - Technical implementation details
+Return false if question is about:
+  - Business requirements
+  - User preferences
+  - Scope decisions
+```
+
+### GeneratePlanMD(goals, non_goals, patterns)
+```
+Use template from "Write Plan (Step 5)" section
+Fill in sections:
+  - Overview from feature description
+  - Goals from ParseGoals output
+  - Non-Goals from ParseNonGoals output
+  - Current State from exploration patterns
+  - Implementation phases from patterns
+  - Success criteria from ParseCriteria output
+Return formatted markdown
+```
+
+---
 
 ## Error Handling
 

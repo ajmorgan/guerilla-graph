@@ -248,12 +248,102 @@ Use this checklist to validate each task:
 
 ---
 
+## VerifyTaskQuality Operation
+
+**Purpose**: Validate a task description against quality criteria before creation or after audit
+
+**Input**:
+- `task_description`: Complete task description (YAML frontmatter + markdown)
+- `plan_context`: Optional - Goals, Non-Goals from PLAN.md for alignment check
+
+**Output**:
+- `is_valid`: boolean (true if no Critical issues)
+- `findings`: Array of {severity, category, issue, recommendation}
+- `counts`: {critical: int, high: int, medium: int, low: int}
+
+**Algorithm**:
+```
+1. Initialize findings = [], counts = {critical: 0, high: 0, medium: 0, low: 0}
+
+2. Check Full Context:
+   a. Parse YAML frontmatter
+      - If missing `files` array: Add Critical finding
+      - If missing `complexity`: Add High finding
+   b. Check for ## What section
+      - If missing or empty: Add Critical finding
+   c. Check for ## Why section
+      - If missing or empty: Add High finding
+   d. Check for ## Where section
+      - If missing: Add Critical finding
+      - If no file paths (pattern: `path:line`): Add Critical finding
+   e. Check for ## How section
+      - If missing: Add Critical finding
+      - If no code snippets (```): Add High finding
+
+3. Check Implementability:
+   a. Search for vague terms:
+      - "appropriately", "as needed", "handle errors", "update accordingly"
+      - If found: Add Critical finding with location
+   b. Check for numbered steps in How section
+      - If no steps (### Step N pattern): Add High finding
+   c. Check for current → change pattern
+      - If no "Current code" or "Change to" blocks: Add High finding
+
+4. Check Correctness (if file-verification available):
+   a. For each file path in Where section:
+      - result = VerifyFileExists(file_path)
+      - If not result.exists: Add Critical finding
+   b. For each line number reference:
+      - result = VerifyLineNumber(file_path, line_number)
+      - If result.status == WAY_OFF: Add Critical finding
+
+5. Check Maintainability (if plan_context provided):
+   a. For each Non-Goal in plan_context:
+      - If task description mentions Non-Goal topic: Add Critical finding
+   b. Search for tech debt indicators:
+      - "workaround", "temporary", "TODO", "hack", "backward compat"
+      - If found: Add Critical finding
+
+6. Check Dependencies (if dependency info available):
+   a. Extract files from task's YAML frontmatter
+   b. Check if other tasks modify same files
+   c. If conflict and no dependency: Add Critical finding
+
+7. Calculate is_valid:
+   is_valid = (counts.critical == 0)
+
+8. Return {is_valid, findings, counts}
+```
+
+**Usage**:
+```markdown
+# Before creating task (gg-task-gen)
+result = VerifyTaskQuality(task_description, plan_context)
+If not result.is_valid:
+  FOR finding IN result.findings WHERE severity == "Critical":
+    Fix issue in task_description
+  Re-verify until is_valid == true
+Create task only after verification passes
+
+# During audit (gg-task-audit)
+result = VerifyTaskQuality(task_description, plan_context)
+Return result as agent findings
+```
+
+**Severity Assignment**:
+- **Critical**: Blocks implementation (missing files, vague instructions, contradicts plan)
+- **High**: Significantly impacts quality (missing rationale, no code examples)
+- **Medium**: Minor quality issue (approximate line numbers, style suggestions)
+- **Low**: Nitpick (formatting, optional improvements)
+
+---
+
 ## Integration Notes
 
 Commands using this file should:
 1. Read this file at start of execution
 2. Store criteria in working memory
-3. Apply to each task being verified/created
+3. Apply VerifyTaskQuality to each task being verified/created
 4. Use severity definitions for consistent reporting
 
 ---
@@ -363,4 +453,84 @@ In `test "storage: create task"`, verify description round-trips:
 const task = try storage.createTask(alloc, "Title", "Description");
 try std.testing.expectEqualStrings("Description", task.description);
 ```
+```
+
+### Example: Good vs Bad Task Descriptions
+
+### BAD (Vague, No Context):
+```
+Update the Scenario entity to support business unit.
+Add the field and update the service.
+```
+
+### GOOD (Specific, Full Context):
+```
+## What
+
+Add business_unit_id foreign key to Scenario entity to track which business unit owns each scenario.
+
+## Why
+
+Scenarios need to be associated with business units for resource planning and reporting.
+This follows the existing pattern of business unit associations used in Project entity.
+
+## Where
+
+### Files to Modify:
+- `src/main/java/com/netflix/animationcrewtracker/model/db/Scenario.java:45` - Add businessUnitId field
+- `src/main/java/com/netflix/animationcrewtracker/repository/ScenarioRepository.java:23` - Add query by businessUnitId
+
+## How
+
+### Step 1: Add field to Scenario entity
+
+**Current code** (`Scenario.java:45`):
+```java
+  private String scenarioNotes;
+  private Integer typeId;
+```
+
+**Change to**:
+```java
+  private String scenarioNotes;
+  private Integer typeId;
+
+  @Column(name = "business_unit_id")
+  private Integer businessUnitId;
+```
+
+**Rationale**: Follows existing foreign key pattern. Migration already added business_unit_id column in V1.0.36.
+
+### Step 2: Add repository query method
+
+**Current code** (`ScenarioRepository.java:23`):
+```java
+  List<Scenario> findByProjectId(Integer projectId);
+```
+
+**Add after**:
+```java
+  List<Scenario> findByBusinessUnitId(Integer businessUnitId);
+```
+
+**Rationale**: Follows Spring Data JDBC naming convention. Enables querying scenarios by business unit.
+
+## Patterns to Follow
+
+- Foreign key pattern: See `Project.java:67` (businessUnitId field)
+- Repository query pattern: See `ProjectRepository.java:15` (findByBusinessUnitId)
+- Column naming: snake_case in DB, camelCase in Java
+
+## Related Code
+
+- Entity: `Project.java:67` - existing businessUnitId field example
+- Migration: `V1.0.36__add_business_unit_id_to_scenario.sql` - DB column already exists
+- Service: `BusinessUnitService.java:45` - service for business unit lookups
+
+## Success Criteria
+
+- [ ] Scenario entity has businessUnitId field with @Column annotation
+- [ ] ScenarioRepository has findByBusinessUnitId method
+- [ ] Follows existing foreign key patterns (Project example)
+- [ ] No backwards compatibility code needed (new feature)
 ```
