@@ -99,7 +99,13 @@ If not result.is_valid:
   STOP - "Plan missing required sections: {result.missing_sections}"
   Fix sections, retry
 
-# Check against quality-criteria.md Five Criteria:
+# Validate against planning checklist:
+checklist = Read(".claude/commands/_shared/planning-checklist.md")
+For each category in checklist (Completeness, Maintainability, Implementability, Performance):
+  Verify plan addresses category requirements
+  If Red Flags present: STOP - fix before continuing
+
+# Check for placeholders:
 For each section in plan:
   If section has placeholder text ("TBD", "TODO", "[fill in]"):
     STOP - "Plan has placeholders in section: {section}"
@@ -265,9 +271,78 @@ Return criteria
 
 ### ExecuteExploration(prompt_template, feature, project_config)
 ```
-1. prompt = FormatPrompt(prompt_template, {feature, project_config})
-2. result = Task(subagent_type="general-purpose", prompt=prompt)
-3. Return result
+1. variables = {
+     feature_summary: feature,
+     language: project_config.language,
+     architecture: project_config.architecture
+   }
+2. prompt = FormatPrompt(prompt_template, variables)
+3. result = Task(subagent_type="general-purpose", prompt=prompt)
+4. Return result
+```
+
+### ParseExplorationResults(exploration_response)
+```
+Purpose: Parse JSON output from explore-codebase.md agent
+
+Input: exploration_response (agent's full response text)
+Output: patterns object with structured exploration data
+
+Algorithm:
+1. Extract JSON block from response:
+   json_text = ExtractJSONBlock(exploration_response)  # From json-parsing.md
+   If json_text is null:
+     # Fallback: Extract patterns from prose
+     Return ParseExplorationProse(exploration_response)
+
+2. Parse JSON structure (matches explore-codebase.md output):
+   data = JSON.parse(json_text)
+
+3. Build patterns object:
+   patterns = {
+     similar_features: data.similar_features or [],
+     architecture: {
+       pattern: data.architecture.pattern or "unknown",
+       data_flow: data.architecture.data_flow or "",
+       integration_points: data.architecture.integration_points or []
+     },
+     data_management: {
+       storage: data.data_management.storage or "",
+       types_to_extend: data.data_management.types_to_extend or []
+     },
+     testing: {
+       location: data.testing.location or "",
+       framework: data.testing.framework or "",
+       pattern_file: data.testing.pattern_file or ""
+     },
+     performance: {
+       targets: data.performance.targets or "",
+       optimization_patterns: data.performance.optimization_patterns or [],
+       batch_operations: data.performance.batch_operations or []
+     },
+     error_handling: {
+       patterns: data.error_handling.patterns or [],
+       error_types: data.error_handling.error_types or [],
+       user_facing: data.error_handling.user_facing or ""
+     },
+     patterns_to_follow: data.patterns_to_follow or [],
+     open_questions: data.open_questions or []
+   }
+
+4. Validate file references:
+   For each pattern in patterns.patterns_to_follow:
+     result = VerifyFileExists(pattern.file)  # From file-verification.md
+     If not result.exists:
+       Mark pattern as unverified
+
+5. Return patterns
+
+Fallback: ParseExplorationProse(response)
+  # If no JSON, extract patterns from prose:
+  - Search for "file:line" patterns
+  - Extract section headers as categories
+  - Build minimal patterns object
+  Return patterns
 ```
 
 ### CollectOpenQuestions()
