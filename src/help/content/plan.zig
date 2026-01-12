@@ -46,7 +46,7 @@ pub const action_new_help =
     \\
     \\OPTIONAL FLAGS:
     \\  --description <text>        Plan description (supports Markdown)
-    \\  --description-file <path>   Read description from file
+    \\  --description-file <path>   Read description from file (use "-" for stdin)
     \\  --json                      Output result in JSON format
     \\
     \\DESCRIPTION FORMAT:
@@ -70,6 +70,12 @@ pub const action_new_help =
     \\
     \\  With description file:
     \\    gg plan new auth --title "Auth" --description-file docs/auth-plan.md
+    \\
+    \\  With stdin (heredoc):
+    \\    gg plan new auth --title "Auth" --description-file - <<'EOF'
+    \\    ## Overview
+    \\    Authentication and authorization system
+    \\    EOF
     \\
     \\  JSON output:
     \\    gg plan new auth --title "Auth" --json
@@ -140,7 +146,7 @@ pub const action_update_help =
     \\OPTIONAL FLAGS:
     \\  --title <text>              New plan title
     \\  --description <text>        New plan description
-    \\  --description-file <path>   Read description from file
+    \\  --description-file <path>   Read description from file (use "-" for stdin)
     \\  --status <status>           Change status (open, in_progress, completed)
     \\  --json                      Output result in JSON format
     \\
@@ -158,6 +164,12 @@ pub const action_update_help =
     \\
     \\  Update description from file:
     \\    gg plan update auth --description-file docs/updated-plan.md
+    \\
+    \\  With stdin (heredoc):
+    \\    gg plan update auth --description-file - <<'EOF'
+    \\    ## Updated Overview
+    \\    Revised plan description with new details
+    \\    EOF
     \\
     \\
 ;

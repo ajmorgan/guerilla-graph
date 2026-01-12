@@ -447,7 +447,7 @@ pub const new_help =
     \\FLAGS (both plan and task):
     \\  --title <text>          Title (optional, can be added later via update)
     \\  --description <text>    Description text
-    \\  --description-file <path>   Read description from file
+    \\  --description-file <path>   Read description from file (use "-" for stdin)
     \\  --json                  Output result in JSON format
     \\
     \\DESCRIPTION:
