@@ -65,8 +65,10 @@ Step 4: Create Plan
   # Fallback: Use mtime if birth time unavailable (returns 0 on some Linux systems)
   birth_time = Bash("stat -f %B PLAN.md 2>/dev/null || { bt=$(stat -c %W PLAN.md 2>/dev/null); [ \"$bt\" != \"0\" ] && echo $bt || stat -c %Y PLAN.md; }")
 
-  Write("/tmp/plan-desc.md", FormatPlanDescription(spec))
-  Bash("gg plan new {plan_slug} --title '{title}' --description-file /tmp/plan-desc.md --created-at {birth_time}")
+  plan_desc = FormatPlanDescription(spec)
+  Bash("""gg plan new {plan_slug} --title '{title}' --created-at {birth_time} --description-file - <<'EOF'
+{plan_desc}
+EOF""")
 
 Step 5: Create Tasks
   For each phase:
@@ -79,8 +81,9 @@ Step 5: Create Tasks
     VerifyTaskQuality(task_desc, quality) or Fix & Re-verify
     VerifyCodeQuality(task_desc, engineering_principles) or Fix & Re-verify
 
-    Write("/tmp/task-{n}.md", task_desc)
-    result = Bash("gg new {plan_slug}: --title '{title}' --description-file /tmp/task-{n}.md")
+    result = Bash("""gg new {plan_slug}: --title '{title}' --description-file - <<'EOF'
+{task_desc}
+EOF""")
     task_ids.append(result.task_id)
 
 Step 6: Build Dependencies
@@ -144,7 +147,9 @@ Run checks from **quality-criteria.md**:
 **5e. Create Task**
 Only after quality verification passes:
 ```bash
-gg new {plan_slug}: --title "[Title]" --description-file /tmp/task-{n}.md
+gg new {plan_slug}: --title "[Title]" --description-file - <<'EOF'
+{task_desc}
+EOF
 ```
 
 Capture task ID (format: `{plan_slug}:NNN`) for dependencies.

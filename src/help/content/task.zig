@@ -54,7 +54,7 @@ pub const action_new_help =
     \\
     \\OPTIONAL FLAGS:
     \\  --description <text>        Task description (supports Markdown + YAML frontmatter)
-    \\  --description-file <path>   Read description from file
+    \\  --description-file <path>   Read description from file (use "-" for stdin)
     \\  --json                      Output result in JSON format
     \\
     \\TASK ID FORMAT:
@@ -101,6 +101,12 @@ pub const action_new_help =
     \\  With description file:
     \\    gg task new "Complex feature" --plan auth \
     \\      --description-file docs/implementation-plan.md
+    \\
+    \\  With stdin (heredoc):
+    \\    gg task new "Add OAuth" --plan auth --description-file - <<'EOF'
+    \\    ## What
+    \\    Implement OAuth2 login flow
+    \\    EOF
     \\
     \\  JSON output:
     \\    gg task new "Deploy changes" --plan auth --json
@@ -319,7 +325,7 @@ pub const action_update_help =
     \\OPTIONAL FLAGS:
     \\  --title <text>              New task title
     \\  --description <text>        New task description
-    \\  --description-file <path>   Read description from file
+    \\  --description-file <path>   Read description from file (use "-" for stdin)
     \\  --status <status>           Change status (open, in_progress, completed)
     \\  --json                      Output result in JSON format
     \\
@@ -345,6 +351,12 @@ pub const action_update_help =
     \\
     \\  Update description from file:
     \\    gg task update auth:001 --description-file docs/updated-plan.md
+    \\
+    \\  Update description from stdin (heredoc):
+    \\    gg task update auth:001 --description-file - <<'EOF'
+    \\    ## What
+    \\    Updated implementation details
+    \\    EOF
     \\
     \\  Change status (reopen completed task):
     \\    gg task update auth:001 --status open

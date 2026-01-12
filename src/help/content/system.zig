@@ -175,8 +175,8 @@ pub const workflow_help =
     \\     Break features into tasks with dependencies (DAG structure):
     \\
     \\     - Create plan: gg new <slug> --title "Feature Name"
-    \\     - Add description: gg update <slug> --description-file plan-spec.md
-    \\     - Create tasks: gg new <slug>: --title "Task Title"
+    \\     - Add description: gg update <slug> --description-file - <<'EOF'...EOF
+    \\     - Create tasks: gg new <slug>: --title "Task Title" --description-file - <<'EOF'...EOF
     \\     - Set dependencies: gg dep add <slug:NNN> --blocks-on <slug:NNN>
     \\     - Verify DAG: gg ready
     \\
@@ -220,6 +220,14 @@ pub const workflow_help =
     \\  - Multi-step implementation plans
     \\  - Code examples and detailed specifications
     \\
+    \\  Stdin Support:
+    \\    Use "-" with --description-file to read from stdin:
+    \\
+    \\    gg new auth: --title "Task" --description-file - <<'EOF'
+    \\    ## What
+    \\    Description content here
+    \\    EOF
+    \\
     \\CORE RULES:
     \\  - Track ALL work in gg (no TodoWrite tool, no markdown TODOs)
     \\  - Use 'gg ready' to find work (never guess task IDs)
@@ -238,7 +246,7 @@ pub const workflow_help =
     \\  Creating & Updating:
     \\    gg new <slug> --title "..."        Create plan (no colon)
     \\    gg new <slug>: --title "..."       Create task (colon suffix)
-    \\    gg update <slug|slug:NNN> --description-file  Update details
+    \\    gg update <id> --description-file - <<'EOF'...EOF  Update via stdin
     \\    gg start <slug:NNN>                Claim task
     \\    gg complete <slug:NNN>             Mark done
     \\

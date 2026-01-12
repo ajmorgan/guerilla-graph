@@ -88,9 +88,19 @@ pub fn parseUpdateArgs(io: std.Io, allocator: std.mem.Allocator, arguments: []co
                 return CommandError.MissingArgument;
             }
             const file_path = arguments[index + 1];
-            const cwd = std.Io.Dir.cwd();
             const max_size = std.Io.Limit.limited(10 * 1024 * 1024); // 10MB max
-            description = try cwd.readFileAlloc(io, file_path, allocator, max_size);
+
+            // Rationale: "-" is Unix convention for stdin (cat, grep, etc.)
+            if (std.mem.eql(u8, file_path, "-")) {
+                // Read from stdin with same size limit as file.
+                var stdin_buffer: [8192]u8 = undefined;
+                var stdin_reader = std.Io.File.stdin().reader(io, &stdin_buffer);
+                description = try stdin_reader.interface.allocRemaining(allocator, max_size);
+            } else {
+                // Read from file.
+                const cwd = std.Io.Dir.cwd();
+                description = try cwd.readFileAlloc(io, file_path, allocator, max_size);
+            }
             description_owned = true; // Allocated, must free
             index += 2;
         } else if (std.mem.eql(u8, argument, "--status")) {
