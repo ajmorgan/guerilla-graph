@@ -327,6 +327,60 @@ variables = {
 Return FormatPrompt(template, variables)
 ```
 
+### BuildErrorContext(build_result)
+```
+Purpose: Extract structured error information for agent retry prompts
+
+Input: build_result (output from failed compilation)
+Output: error_context object with structured errors
+
+Algorithm:
+1. Parse build output for error patterns:
+   - Zig: "error: " followed by message, then "src/file.zig:line:col"
+   - Java: "error: " at "File.java:line"
+   - Generic: Lines containing "error" or "Error"
+
+2. Extract file:line references:
+   errors = []
+   For each error_line in build_result:
+     If matches pattern "{file}:{line}":
+       error = {
+         file: extracted_file,
+         line: extracted_line,
+         message: error_message,
+         context: surrounding_lines
+       }
+       Add error to errors
+
+3. Group by file:
+   file_errors = {}
+   For each error in errors:
+     If error.file not in file_errors:
+       file_errors[error.file] = []
+     Add error to file_errors[error.file]
+
+4. Build context string:
+   context = "Build failed with {len(errors)} errors:\n"
+   For each file, errs in file_errors:
+     context += "\n{file}:\n"
+     For each err in errs:
+       context += "  - Line {err.line}: {err.message}\n"
+
+5. Return {
+     error_count: len(errors),
+     file_count: len(file_errors),
+     errors: errors,
+     summary: context,
+     raw_output: build_result (truncated to 2000 chars)
+   }
+
+Usage in retry prompt:
+  "Previous attempt failed with build errors:
+   {error_context.summary}
+
+   Please fix these specific issues in your implementation."
+```
+
 ---
 
 ## Error Handling

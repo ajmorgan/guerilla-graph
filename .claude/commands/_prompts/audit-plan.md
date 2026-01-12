@@ -11,6 +11,7 @@ Reference these for verification standards:
 - `quality-criteria.md`: 5 quality dimensions (Full Context, Implementability, Maintainability, Correctness, Dependencies)
 - `file-verification.md`: File existence, line number accuracy, pattern verification
 - `code-verification.md`: Engineering principles compliance
+- `planning-checklist.md`: Plan quality checklist with Red Flags section
 
 ## Prompt
 
@@ -68,6 +69,13 @@ Review the plan for:
 2. Are explicitly-sized types specified (if applicable to language)?
 3. Are resource management patterns documented (RAII, defer, etc.)?
 4. Are function size limits mentioned (if project has standards)?
+
+**Red Flags** (from planning-checklist.md - flag as Critical if present):
+- Vague instructions: "Update appropriately", "Handle errors as needed", "Add validation"
+- Placeholder paths: "src/.../SomeService.java", "Update the service file"
+- Missing details: No line numbers, no code snippets, no pattern references
+- Tech debt indicators: "For backward compatibility", "Temporary workaround", "Quick fix"
+- Performance risks: Queries inside loops, no batch operations, missing N+1 analysis
 
 **Verification Requirements:**
 - For every pattern reference (file:line), READ that file and verify:
