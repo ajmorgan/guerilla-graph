@@ -199,6 +199,56 @@ matches = Grep(pattern="TODO", output_mode="files_with_matches")
 
 ---
 
+### FormatPrompt Operation
+
+**Purpose**: Fill template variables in a prompt file for agent invocation
+
+**Input**:
+- `template`: Prompt template content (from Read of .md file)
+- `variables`: Map of variable names to values
+
+**Output**:
+- `formatted_prompt`: String with all {{variables}} replaced
+
+**Algorithm**:
+```
+1. Start with template content
+2. For each key, value in variables:
+   - Replace all occurrences of "{{key}}" with value
+   - Handle missing variables: Leave as-is or warn
+3. Validate no unreplaced {{...}} patterns remain (optional)
+4. Return formatted_prompt
+```
+
+**Usage**:
+```markdown
+# Load template
+template = Read(".claude/commands/_prompts/audit-task.md")
+
+# Define variables
+variables = {
+  "plan_file": "PLAN.md",
+  "plan_goals": plan_goals,
+  "plan_non_goals": plan_non_goals,
+  "task_id": task.id,
+  "title": task.title,
+  "full_description": task.description
+}
+
+# Format and use
+prompt = FormatPrompt(template, variables)
+result = Task(subagent_type="general-purpose", prompt=prompt)
+```
+
+**Common Variable Patterns**:
+- `{{task_id}}` - Task identifier (e.g., "auth:001")
+- `{{plan_file}}` - Path to plan file
+- `{{plan_goals}}` - Extracted goals from plan
+- `{{plan_non_goals}}` - Extracted non-goals from plan
+- `{{full_description}}` - Complete task description with YAML + markdown
+
+---
+
 ## Control Flow Conventions
 
 **Purpose**: Standard patterns for conditional logic and loops

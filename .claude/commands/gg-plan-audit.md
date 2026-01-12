@@ -172,6 +172,27 @@ See `.claude/commands/_prompts/audit-plan.md` for full agent prompt with quality
 {endif}
 ```
 
+## Inline Algorithms
+
+Command-specific operations not defined in shared modules:
+
+### GenerateReport(iteration, findings, exit_reason)
+```
+Use "Final Report Template" section format
+Fill in:
+  - Total iterations: iteration count
+  - Exit reason: "converged" | "max_iterations" | "user_paused"
+  - Final quality:
+    - If critical_count == 0 AND high_count == 0: "Excellent"
+    - Else: "Needs Review"
+  - Audit History: findings from each iteration
+  - Remaining Issues: Medium/Low findings still present
+  - Next Steps: appropriate commands based on quality
+Return formatted markdown
+```
+
+---
+
 ## Error Handling
 
 **If agent fails:**

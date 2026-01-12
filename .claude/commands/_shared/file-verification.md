@@ -196,6 +196,49 @@ Before creating task to modify file:
 
 ---
 
+## Operation 6: Validate Plan Format
+
+**Purpose**: Check if PLAN.md has required sections for task generation
+
+**Input**:
+- `plan_path`: Path to plan file (string)
+
+**Output**:
+- `is_valid`: boolean
+- `missing_sections`: Array of missing section names
+- `note`: Context about validation result
+
+**Algorithm**:
+```
+1. Read plan file:
+   content = Read(plan_path)
+   If error: Return {is_valid: false, missing_sections: [], note: "File not found"}
+
+2. Required sections (case-insensitive search):
+   required = ["## Goals", "## Non-Goals", "## Implementation", "## Success Criteria"]
+
+3. Check each section:
+   missing_sections = []
+   For each section in required:
+     If section not found in content:
+       Add section to missing_sections
+
+4. Calculate validity:
+   is_valid = (length(missing_sections) == 0)
+
+5. Return {is_valid, missing_sections, note}
+```
+
+**Usage**:
+```markdown
+result = ValidatePlanFormat("PLAN.md")
+If not result.is_valid:
+  Error: "PLAN.md missing required sections: {result.missing_sections}"
+  Suggest: "Run /gg-plan-gen first or add missing sections"
+```
+
+---
+
 ## Limits
 
 - Max files to verify per task: 50
@@ -222,6 +265,7 @@ Before creating task to modify file:
    - ExtractCodeSnippet
    - VerifyPatternExists
    - DetectOldSchemaMarkers
+   - ValidatePlanFormat
 
 3. For each file reference in task:
    - Run VerifyFileExists

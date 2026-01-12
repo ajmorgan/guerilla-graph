@@ -59,3 +59,54 @@
 **If exploration finds insufficient code**:
 - Report what was found/not found
 - Ask user for clarification about feature or codebase structure
+
+---
+
+## Output Format
+
+Return findings as structured JSON at the end of your response:
+
+```json
+{
+  "similar_features": [
+    {"file": "path", "line": 123, "description": "...", "relevance": "..."}
+  ],
+  "architecture": {
+    "pattern": "...",
+    "data_flow": "entry → processing → storage → return",
+    "integration_points": ["..."]
+  },
+  "data_management": {
+    "storage": "...",
+    "types_to_extend": ["..."]
+  },
+  "testing": {
+    "location": "...",
+    "framework": "...",
+    "pattern_file": "..."
+  },
+  "performance": {
+    "targets": "...",
+    "optimization_patterns": ["..."],
+    "batch_operations": ["..."]
+  },
+  "error_handling": {
+    "patterns": ["..."],
+    "error_types": ["..."],
+    "user_facing": "..."
+  },
+  "patterns_to_follow": [
+    {"file": "path", "line": 123, "pattern": "...", "rationale": "..."}
+  ],
+  "open_questions": ["..."]
+}
+```
+
+This enables plan-gen to parse exploration results programmatically. The JSON structure covers all 7 Exploration Focus areas:
+1. similar_features → Section 1 (Similar Existing Features)
+2. architecture → Section 2 (Architecture Patterns)
+3. data_management → Section 3 (Data/State Management)
+4. architecture.integration_points → Section 4 (Integration Points)
+5. testing → Section 5 (Testing Patterns)
+6. performance → Section 6 (Performance Considerations)
+7. error_handling → Section 7 (Error Handling)

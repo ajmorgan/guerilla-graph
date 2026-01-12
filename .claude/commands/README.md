@@ -28,8 +28,6 @@ Quality-gated workflow for AI-assisted parallel execution.
 ├── _shared/                # Reusable modules
 │   ├── control-flow.md     # Tool invocation patterns
 │   ├── quality-criteria.md # 5 quality dimensions
-│   ├── quality-standards.md
-│   ├── planning-checklist.md
 │   ├── fix-patterns.md     # Auto-fix algorithms
 │   ├── json-parsing.md     # JSON extraction
 │   ├── file-verification.md

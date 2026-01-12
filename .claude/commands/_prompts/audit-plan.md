@@ -5,6 +5,13 @@
 - `{{plan_path}}` - Path to the plan file (e.g., PLAN.md)
 - `{{plan_content}}` - Full content of the plan file
 
+## Shared Modules
+
+Reference these for verification standards:
+- `quality-criteria.md`: 5 quality dimensions (Full Context, Implementability, Maintainability, Correctness, Dependencies)
+- `file-verification.md`: File existence, line number accuracy, pattern verification
+- `code-verification.md`: Engineering principles compliance
+
 ## Prompt
 
 Audit the implementation plan at {{plan_path}} for maintainability and implementability.

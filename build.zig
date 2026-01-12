@@ -228,4 +228,29 @@ pub fn build(b: *std.Build) void {
     ci_step.dependOn(fmt_step);
     ci_step.dependOn(check_step);
     ci_step.dependOn(test_step);
+
+    // Release installation step. Builds with ReleaseFast optimization regardless
+    // of -Doptimize flag. Use with --prefix (-p) to install to a custom location.
+    // Examples:
+    //   zig build install-release -p ~/.local     # Installs to ~/.local/bin/gg
+    //   zig build install-release -p /usr/local   # Installs to /usr/local/bin/gg
+    const install_release_step = b.step("install-release", "Install ReleaseFast build (use -p PREFIX to set install location)");
+
+    // Create a separate ReleaseFast executable for the install-release step
+    const release_exe = b.addExecutable(.{
+        .name = "gg",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = .ReleaseFast, // Always ReleaseFast regardless of -Doptimize
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "guerilla_graph", .module = mod },
+            },
+        }),
+    });
+    release_exe.root_module.linkSystemLibrary("sqlite3", .{});
+
+    const install_release = b.addInstallArtifact(release_exe, .{});
+    install_release_step.dependOn(&install_release.step);
 }

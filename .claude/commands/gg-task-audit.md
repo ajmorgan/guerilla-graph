@@ -412,6 +412,46 @@ Wave 2 (after Wave 1): {list of task IDs blocked by Wave 1}
 
 ---
 
+## Inline Algorithms
+
+Command-specific operations not defined in shared modules:
+
+### SerializeTaskStates(tasks)
+```
+Sort tasks by task_id
+state_strings = []
+For each task in tasks:
+  state = "{task.id}|{hash(task.description)}|{task.dependencies}"
+  Add state to state_strings
+Return join(state_strings, "\n")
+```
+
+**Purpose**: Create a comparable snapshot of task states to detect changes between iterations. If `SerializeTaskStates(tasks_before) == SerializeTaskStates(tasks_after)`, no changes were made.
+
+---
+
+### ExtractPlanContext(plan_content)
+```
+Extract goals, non-goals, architecture, and breaking changes from PLAN.md.
+
+Input: plan_content (string)
+Output: {goals, non_goals, architecture, breaking_changes}
+
+Algorithm:
+1. goals = Extract text between "## Goals" and next "##" header
+2. non_goals = Extract text between "## Non-Goals" and next "##" header
+3. architecture = Extract text between "### Architecture" and next "###" or "##"
+4. breaking_changes = Extract text between "## Risk" or "## Breaking" and next "##"
+   - If not found, return "None documented"
+5. Return {goals, non_goals, architecture, breaking_changes}
+```
+
+**Purpose**: Formalizes extraction logic from control flow lines 71-75. Provides canonical reference for PLAN.md context extraction.
+
+**Note**: Control flow (lines 71-75) retains inline extraction steps for readability. This algorithm documents the canonical behavior.
+
+---
+
 ## Error Handling
 
 **Plan not found**: Suggest `gg plan ls`, EXIT
