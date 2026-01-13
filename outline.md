@@ -1,0 +1,551 @@
+Proposed Outline: Harness Engineering with Claude Code
+
+  Part 0: What This Book Is
+
+  - Audience: Engineers using Claude Code who want consistent, scalable workflows
+  - Core thesis: CC gives you primitives (hooks, commands, MCP, CLAUDE.md). The skill is knowing when and how to combine them.
+  - What you'll learn: Patterns that work across any project, not tied to specific tools
+  - The governing constraint: context window
+    - Everything in CC is context management
+    - Context is finite (~200k tokens, but effective attention is smaller)
+    - Everything competes: system prompt, CLAUDE.md, hooks, conversation, tool outputs
+    - The attention hierarchy:
+      - Recent conversation > older conversation
+      - Hook injections (system reminders) get strong attention
+      - CLAUDE.md is present but competes with everything else
+      - Large tool outputs push other things out
+    - Context pressure symptoms:
+      - Claude "forgets" earlier instructions
+      - Summarization kicks in (you see shorter responses about earlier work)
+      - "I don't have context on..." responses
+      - Repeated questions about things you already told it
+    - This book teaches you to work within this constraint
+
+  ---
+  Part 1: The Primitives
+
+  Chapter 1: CLAUDE.md — Persistent Memory
+  - What goes here vs elsewhere
+    - CLAUDE.md (background context, read but not guaranteed in active attention)
+      - Project architecture and module structure
+      - Build commands, test commands, common operations
+      - Domain terminology and business rules
+      - Patterns and conventions specific to this codebase
+      - Things that don't change often
+    - Use hooks instead (need guaranteed visibility)
+      - Engineering principles that must influence every response
+      - Standards that agents also need (CLAUDE.md doesn't propagate to agents)
+      - Anything you'd be upset if Claude "forgot"
+    - Use commands instead (multi-step, parameterized)
+      - Workflows you repeat with variations
+      - Processes too long to type each time
+    - Use MCP instead (dynamic, external)
+      - Live API lookups, documentation that updates
+      - Verification against external sources
+  - Domain knowledge, architecture, patterns
+  - The /init command and when to edit manually
+  - Anti-patterns to avoid
+    - 10-page CLAUDE.md that Claude skims (too much = ignored)
+    - Conflicting instructions ("be concise" + "be thorough")
+    - Vague principles ("write good code") - not actionable
+    - Duplicating hook content (pay context cost twice)
+    - Putting volatile info here (stale quickly)
+    - No structure (wall of text vs organized sections)
+
+  Chapter 2: Hooks — Automatic Injection
+  - SessionStart, UserPromptSubmit, SubagentStart
+  - The injection pattern: consistent context without repetition
+  - When to use each hook type
+    - SessionStart
+      - Context recovery (workflow protocols, environment state)
+      - One-time detection (is this a jj repo? what branch?)
+      - Heavy content that shouldn't repeat every prompt
+      - Example: `gg workflow` loads full protocol once per session
+    - UserPromptSubmit
+      - Engineering principles (must influence every response)
+      - Lightweight injection (runs on every message)
+      - Standards that apply regardless of task
+      - Example: coding standards, naming conventions
+    - SubagentStart
+      - Same principles agents need (they start fresh)
+      - Workflow context agents must know
+      - Critical: agents don't inherit parent's injected context
+      - Example: both `gg workflow` AND principles (agents need both)
+    - PreToolUse / PostToolUse
+      - Validation before dangerous operations
+      - Logging/auditing tool calls
+      - Blocking specific tools or patterns
+      - Example: warn before `rm -rf`, log all file writes
+    - Stop
+      - Cleanup when session ends
+      - Notifications (sound, alert)
+      - Rarely needed in practice
+  - Debugging hooks (they fail silently)
+
+  Chapter 3: Commands — Reusable Workflows
+  - When a command beats natural language
+    - Use a command when:
+      - You repeat the workflow more than twice (DRY for prompts)
+      - Instructions are long enough you'd forget steps
+      - You need consistency across uses (same process every time)
+      - The workflow takes parameters (commit message, file path, feature name)
+      - You want to share the workflow with teammates
+      - Getting it wrong has consequences (deployment, refactoring)
+    - Stay with natural language when:
+      - One-off task you won't repeat
+      - Simple request (one sentence)
+      - You're still figuring out the workflow (iterate first, codify later)
+      - High variability between uses (no stable pattern yet)
+    - The test: "Am I typing similar instructions for the third time?"
+  - Structure: YAML frontmatter, arguments, instructions
+  - The _prompts/ and _shared/ pattern for composition
+  - Commands vs skills vs MCP tools
+    - Commands (.claude/commands/*.md)
+      - Static instructions Claude follows
+      - Project-specific, lives in repo
+      - Good for: multi-step workflows unique to this codebase
+      - Example: /gg-plan-gen, /deploy-staging
+    - Skills (.claude/skills/)
+      - Portable commands, shareable across projects
+      - Can be global (~/.claude/skills/) or project-local
+      - Good for: general workflows you use everywhere
+      - Example: /commit, /review-pr
+    - MCP tools
+      - External servers providing callable functions
+      - Actual computation, not just instructions
+      - Good for: dynamic data, external APIs, verification
+      - Example: zig-docs (API lookup), database queries
+    - Decision guide:
+      - "Instructions for Claude to follow" → Command or Skill
+      - "Need it in multiple projects" → Skill
+      - "Need external data or computation" → MCP
+      - "Project-specific workflow" → Command
+
+  Chapter 4: MCP — External Tools
+  - When to reach outside CC's built-ins
+    - CC already handles well (don't need MCP):
+      - File operations (Read, Write, Edit, Glob, Grep)
+      - Shell commands (Bash)
+      - Web content (WebFetch, WebSearch)
+      - Agents for exploration (Task tool)
+    - MCP adds value when:
+      - Domain-specific verification (language docs, API references)
+      - Live external data (databases, APIs with auth)
+      - Computation Claude can't do (complex processing, specialized algorithms)
+      - Structured access to protected resources (internal tools, authenticated services)
+      - Operations that need guarantees (transactions, atomic operations)
+    - Stay with built-ins when:
+      - One-off need (just use Bash or WebFetch)
+      - CC already does it (don't add complexity)
+      - Setup cost exceeds benefit
+  - Domain verification pattern (zig-docs example)
+  - The cost/benefit of adding MCP servers
+    - The real cost: context window
+      - Every MCP tool description consumes tokens on every message
+      - 10 tools with complex schemas = significant context overhead
+      - Less room for conversation, code, and actual work
+      - Cost is paid even when tools aren't used
+    - Executability: can Claude actually use it?
+      - Clear tool names and descriptions → Claude picks the right tool
+      - Simple parameter schemas → Claude invokes correctly
+      - Ambiguous tools → Claude guesses wrong or asks unnecessarily
+      - Too many similar tools → Claude gets confused
+    - Worth adding when:
+      - Frequent use (context cost amortized across many invocations)
+      - Simple interface (Claude can use it reliably)
+      - Clear capability gap (CC built-ins truly can't do it)
+      - Output is actionable (not just data dump Claude has to parse)
+    - Not worth adding when:
+      - Rarely used (paying context cost for nothing)
+      - Complex schema (Claude will invoke incorrectly)
+      - Overlaps with built-ins (WebFetch, Bash already work)
+      - "Nice to have" (every tool competes for context space)
+    - Rule of thumb: each MCP tool should earn its context budget
+
+  ---
+  Part 2: Composition Patterns
+
+  Chapter 5: The Injection Pattern
+  - Problem: Quality drift across prompts and agents
+  - Solution: Hook + principles file
+  - What makes good principles (project-specific, actionable)
+  - Thinking modes (ultrathink)
+    - Extended thinking allocates more compute to reasoning before acting
+    - "ultrathink" triggers deepest reasoning mode
+    - Put it at the top of your principles file
+    - Cost: more tokens per response
+    - Benefit: dramatically better planning and architectural decisions
+    - When to use: always (cost is negligible vs fixing bad code)
+  - "Words that work" / "Words that don't"
+    - Words that work:
+      - "maintainability" → triggers careful design, avoids clever tricks
+      - "implementability" → forces concrete thinking, verifiable steps
+      - "DRY" → prevents duplication, looks for existing patterns
+      - "YAGNI" → stops over-engineering, feature creep
+      - "SRP" → keeps modules focused, clear responsibilities
+      - "zero technical debt" → no workarounds, no "fix later"
+    - Words that don't:
+      - "robust" → vague, leads to defensive bloat
+      - "comprehensive" → invites scope creep
+      - "flexible" → abstraction bait, premature generalization
+      - "future-proof" → speculation, over-engineering
+      - "handle all edge cases" → unbounded scope
+    - Why this matters: Claude responds to framing
+      - Precise terms → precise behavior
+      - Vague terms → Claude fills in the blanks (often wrong)
+
+  Chapter 6: The Context Recovery Pattern
+  - Problem: Compaction loses state
+  - What compaction actually does
+    - When: context approaches limit (you don't control this)
+    - What's lost: conversation history summarized, tool outputs trimmed
+    - What survives: system prompt, CLAUDE.md, hooks, recent messages
+    - The result: Claude loses details but keeps gist
+  - Solution: SessionStart hooks that restore context
+  - Designing for recovery (external state > context state)
+    - State in context = lost on compaction
+    - State in files/database = survives forever
+    - Pattern: write state externally, hooks re-inject on session start
+    - Example: gg stores tasks in SQLite, `gg workflow` re-injects protocol
+  - Signs you need better recovery:
+    - "What were we working on?" after long sessions
+    - Claude forgets the plan mid-feature
+    - You keep re-explaining context
+
+  Chapter 7: The Audit Loop Pattern
+  - Problem: First-pass output has issues
+  - Solution: Generate → Audit → Fix → Repeat (with max iterations)
+  - Convergence mechanics
+    - Categorize issues by severity: Critical, High, Medium, Low
+    - Continue if Critical or High issues remain
+    - Stop when no Critical/High issues (Medium/Low are acceptable)
+    - Max iterations: 5 (hard limit to prevent infinite loops)
+    - If doesn't converge: human judgement call (proceed or investigate)
+  - When to use audit loops vs single-pass
+    - Audit loops: plans, task descriptions, architectural decisions
+    - Single-pass: simple edits, well-defined changes, low-risk operations
+    - Rule: if getting it wrong causes rework, audit it
+
+  Chapter 8: The Planning Pattern
+  - Problem: Features are too big/vague to implement directly
+    - "Add authentication" is not actionable
+    - Claude will start coding without understanding the codebase
+    - Results: wrong patterns, missed existing utilities, rework
+  - Planning vs "plan mode"
+    - CC's plan mode: Claude explores, writes plan, waits for approval
+    - This pattern: structured exploration → verified plan → audited tasks
+    - Plan mode is a primitive; this pattern composes it with quality gates
+  - The exploration phase
+    - NEVER plan from imagination — explore first
+    - Load project context (CLAUDE.md, architecture)
+    - Find similar features in codebase (patterns to follow)
+    - Identify files that will change (with line numbers)
+    - Research unknowns autonomously (don't ask user obvious things)
+    - Result: grounded understanding before any planning
+  - Plan structure (PLAN.md)
+    - Overview: what + why (1-2 paragraphs)
+    - Goals: specific, measurable outcomes
+    - Non-goals: explicitly out of scope (prevents creep)
+    - Current state: relevant files with file:line references and snippets
+    - Phases: logical groupings of work
+      - Each phase: files to modify, changes to make, code snippets
+      - Phases enable incremental validation
+    - Success criteria: how to verify it works
+    - Risks: what could go wrong, mitigations
+  - The "no open questions" rule
+    - Plan must be complete — no "TBD" or "to be determined"
+    - If unknown: research it (explore codebase, read docs)
+    - If truly ambiguous: ask user explicitly, then incorporate answer
+    - Why: open questions become agent confusion later
+  - Quality criteria for plans
+    - Completeness: all sections filled, no placeholders
+    - Correctness: file paths exist, line numbers accurate (±5 lines)
+    - Implementability: specific enough to execute without asking
+    - Maintainability: follows codebase patterns, no tech debt
+  - Red flags in plans
+    - Vague language: "update appropriately", "handle as needed"
+    - Placeholder paths: "src/.../SomeFile.java"
+    - Missing rationale: changes without explaining why
+    - Scope creep: "while we're here, let's also..."
+    - Tech debt: "temporary workaround", "fix later"
+  - When to plan vs just do
+    - Plan when:
+      - Feature touches >3 files
+      - Multiple valid approaches exist
+      - Changes affect existing behavior
+      - You'd be upset if Claude got it wrong
+    - Just do when:
+      - Single file, obvious change
+      - Bug fix with known location
+      - User gave specific instructions
+  - The audit loop (plan refinement)
+    - Generate plan → audit against criteria → fix issues → repeat
+    - Converge when: no Critical/High issues remain
+    - Max iterations: 5 (prevent infinite loops)
+    - Key insight: cheaper to fix plan than fix code
+
+  Chapter 9: The Agent Delegation Pattern
+  - Problem: Some tasks need exploration without polluting main context
+  - Solution: Spawn agents for research, work directly for focused edits
+  - Critical concept: agent context isolation
+    - Agents are fresh contexts (this is counterintuitive)
+    - They see ONLY: their prompt + their tool calls + hook injections
+    - They do NOT see: parent conversation, previous agents' work
+    - This is why SubagentStart hooks matter so much
+    - Implication: agent prompts must be self-contained
+  - Writing effective agent prompts
+    - Include full context (don't assume they know anything)
+    - Specify the deliverable clearly (what should they return?)
+    - Give them the tools they need (file paths, search terms)
+    - Keep prompts focused (one clear task, not five)
+  - Getting results back
+    - Agents return text (you parse it)
+    - Large results consume your context
+    - Pattern: ask for summaries, not raw dumps
+  - Parallel agents
+    - Can't communicate with each other (no shared state)
+    - Coordinate via external state (files, database)
+    - Parent orchestrates, agents execute
+  - When agents help vs hurt
+    - Help: exploration, research, isolated tasks
+    - Hurt: tight coordination needed, small focused edits
+
+  Chapter 10: The Course Correction Pattern
+  - Problem: Claude drifts from intent, makes mistakes you don't catch
+  - The human's role in the loop
+    - Actively review each edit (don't auto-accept)
+    - Realign immediately when Claude strays
+    - Your expertise keeps the AI aligned
+  - VCS as safety net
+    - Start features from clean VCS state
+    - Checkpoint good states (commit/squash working changes)
+    - Worst case: restore and retry (jj restore, git checkout)
+  - When to intervene vs let it run
+    - Intervene: wrong direction, accumulating mistakes, confused
+    - Let it run: making progress, minor issues you'll fix later
+  - The cost of not correcting: compounding errors are expensive
+
+  ---
+  Part 3: Scaling Up — Parallel Execution
+
+  Chapter 11: Why Parallelism Needs Structure
+  - TodoWrite's limits (single-threaded, no dependencies, lost on compaction)
+  - The insight: tasks have dependencies
+  - DAG basics for the uninitiated
+    - What is a DAG?
+      - Directed: arrows point one way (A → B means A blocks B)
+      - Acyclic: no loops (can't have A → B → C → A)
+      - Graph: nodes (tasks) connected by edges (dependencies)
+    - Visual intuition
+      - Tasks are boxes, dependencies are arrows
+      - Arrow means "must complete before"
+      - Follow arrows backward to find what's blocking you
+    - Why "acyclic" matters
+      - Cycle = deadlock (A waits for B waits for C waits for A)
+      - System must detect and reject cycles when adding dependencies
+      - If you can't add a dependency, you probably have a design issue
+    - Key properties for parallel execution
+      - "Ready" = no incoming arrows from incomplete tasks
+      - Multiple tasks can be ready simultaneously = parallelism
+      - Completing a task removes its outgoing arrows, may make others ready
+    - Topological order
+      - Valid sequence where all dependencies satisfied
+      - Multiple valid orders possible (flexibility for parallelism)
+      - Wave execution is one topological traversal
+    - Simple example
+      - auth:001 (setup) → auth:002 (users) → auth:004 (tests)
+      - auth:001 (setup) → auth:003 (roles) → auth:004 (tests)
+      - Wave 1: auth:001 (only ready task)
+      - Wave 2: auth:002, auth:003 (both ready after 001)
+      - Wave 3: auth:004 (ready after 002 and 003)
+
+  Chapter 12: Building a Task DAG
+  - What makes a good task (full context, clear scope)
+  - Dependency types
+    - Data dependencies (output → input)
+      - Task B needs artifact from Task A
+      - Example: Task A creates a type, Task B uses that type
+      - Example: Task A creates API endpoint, Task B calls it
+      - Detection: look for "uses", "requires", "calls" in task descriptions
+    - File-level serialization (same file → chain)
+      - Multiple tasks modify same file = must serialize
+      - Even different line ranges = still conflict risk
+      - Why: agents have stale file views, line numbers drift
+      - Why: VCS can't auto-merge concurrent changes to same file
+      - Rule: if tasks touch same file, chain them (A → B → C)
+      - This is the most commonly missed dependency type
+    - Phase dependencies (logical ordering)
+      - "Phase 2 requires Phase 1 complete"
+      - Often implicit from plan structure
+      - Foundation work before feature work
+    - Explicit dependencies (stated in prose)
+      - Plan says "after auth:001 completes"
+      - User-specified relationships
+      - Override when implicit detection misses something
+    - Resource dependencies (external constraints)
+      - Database migrations before queries
+      - Config changes before code using config
+      - External API setup before integration
+  - Maximizing parallelism
+    - Fewer dependencies = more parallel work
+    - File-level serialization is the main parallelism killer
+    - Strategy: split large files before feature work
+    - Strategy: design tasks to touch disjoint files
+  - Ready tasks = parallelism capacity
+    - Task is "ready" when all blockers complete
+    - 5 ready tasks = spawn 5 agents
+    - DAG shape determines throughput
+
+  Chapter 13: Wave Execution
+  - Find ready → Spawn agents → Gate → Close → Repeat
+  - Compilation gates (why you need them)
+    - The problem: agents work in isolation
+      - Each agent sees only its task description
+      - Agent A doesn't know what Agent B changed
+      - No coordination during execution
+    - What can go wrong without gates:
+      - Type mismatches: Agent A changes function signature, Agent B calls old signature
+      - Import conflicts: Multiple agents add conflicting dependencies
+      - Semantic conflicts: Changes compile individually but break together
+      - State corruption: Closing tasks commits you to broken state
+    - Why compile BEFORE closing:
+      - Closing a task unblocks dependents in the DAG
+      - If closed task is broken, dependents build on broken foundation
+      - Much easier to fix with tasks still in_progress (can reset, retry)
+      - Once closed, rollback requires manual intervention
+    - The gate rule: NO task closes until build passes
+      - All wave tasks stay in_progress until compilation succeeds
+      - If build fails: fix errors, retry compile, then close
+      - Atomic waves: all succeed together or all stay open
+    - Test gates (optional but recommended)
+      - Compile gate catches syntax/type errors
+      - Test gate catches semantic/behavior errors
+      - Strategy: run tests each wave, or only at end
+      - Trade-off: safety vs speed
+  - Recovery from failed states
+    - Build fails after wave: keep tasks in_progress, fix, retry
+    - Agent timeout: reset that task to open, re-execute
+    - Partial completion: check blockers, resolve, continue
+    - Nuclear option: reset all in_progress to open, restore files, start over
+
+  Chapter 14: Case Study — gg Workflow
+  - The full pipeline overview
+    - /gg-plan-gen → /gg-plan-audit → /gg-task-gen → /gg-task-audit → /gg-execute
+    - Each step has quality gates; skipping audits causes rework
+  - Step 1: /gg-plan-gen (feature → PLAN.md)
+    - Input: feature description (text or file)
+    - Loads project context (CLAUDE.md)
+    - Spawns exploration agent to understand codebase
+    - Resolves ambiguities (research or ask user)
+    - Output: PLAN.md with phases, architecture, success criteria
+    - Key insight: autonomous exploration, not asking user for obvious things
+  - Step 2: /gg-plan-audit (iterate until quality)
+    - Single agent per iteration (PLAN.md is one document)
+    - Convergence: 0 Critical, 0 High OR no changes OR max 5 iterations
+    - Checks: file paths exist, line numbers accurate, phases sized correctly
+    - Key insight: max iteration limit prevents infinite loops
+  - Step 3: /gg-task-gen (PLAN.md → gg tasks)
+    - Parses phases into individual tasks
+    - Verifies all file references before creating tasks
+    - Extracts real code snippets for task descriptions
+    - Builds dependency graph:
+      - File-level serialization (tasks modifying same file → chain)
+      - Phase dependencies (phase 2 after phase 1)
+      - Explicit dependencies (from prose)
+    - Quality gate: all tasks verified before reporting
+    - Key insight: prevention over detection (verify before create)
+  - Step 4: /gg-task-audit (parallel audit of all tasks)
+    - ONE agent PER task (critical: don't bundle, blows context)
+    - All agents launched in SINGLE message (parallel execution)
+    - Convergence: 0 Critical, 0 High, ≤2 Medium
+    - Orchestrator applies fixes (agents only report)
+    - Key insight: agent isolation means self-contained prompts
+  - Step 5: /gg-execute (wave-based parallel execution)
+    - Wave loop: ready tasks → spawn agents → compile → close → repeat
+    - File conflict detection before each wave
+    - Compilation gate: build MUST pass before closing ANY task
+    - Main agent closes tasks (sub-agents only implement)
+    - Recovery patterns: reset tasks, restore files, retry
+    - Key insight: DAG determines parallelism (ready count = agent count)
+  - Why each step exists
+    - plan-gen: exploration produces better plans than asking
+    - plan-audit: catch structural issues before generating 20 tasks
+    - task-gen: verified tasks need minimal audit cycles
+    - task-audit: parallel verification at scale
+    - execute: safe parallel execution with gates
+  - Adapting to other task systems
+    - Core pattern: external state (DAG), quality gates, wave execution
+    - Replace gg with: Jira + scripts, GitHub issues, custom tooling
+    - Key requirements: dependency tracking, ready query, status updates
+    - The commands are templates—adapt prompts to your domain
+
+  ---
+  Part 4: Reference
+
+  Appendix A: Harness File Structure
+  - Complete .claude/ directory layout
+  - What each file does
+
+  Appendix B: Quick Patterns Table
+  - Problem → Pattern → Example (one row per pattern)
+
+  Appendix C: Debugging Checklist
+  - Common failure modes
+    - Hook fails silently
+      - Symptom: nothing happens, no error
+      - Debug: run hook command manually in terminal
+      - Fix: check paths, permissions, exit codes
+    - Agent goes off-track
+      - Symptom: returns wrong thing, no feedback until done
+      - Debug: make prompt more explicit, add constraints
+      - Fix: smaller scope, clearer deliverable
+    - Context fills mid-task
+      - Symptom: Claude forgets earlier context
+      - Debug: look for summarization, lost details
+      - Fix: break into smaller tasks, use external state
+    - Principles conflict
+      - Symptom: Claude picks arbitrarily, inconsistent behavior
+      - Debug: review injected content for contradictions
+      - Fix: prioritize, remove conflicts, be specific
+    - Claude hallucinates paths/APIs
+      - Symptom: references files or functions that don't exist
+      - Debug: usually means insufficient context
+      - Fix: inject real paths, use MCP for verification
+    - CLAUDE.md ignored
+      - Symptom: Claude doesn't follow documented patterns
+      - Debug: too long, too vague, or competing with recent conversation
+      - Fix: shorten, make actionable, or move to hooks
+  - Quick diagnostic questions
+    - Is the hook running? (check with echo test)
+    - Is the agent getting the context it needs? (check SubagentStart)
+    - Is context pressure the issue? (long session, big tool outputs)
+    - Are instructions conflicting? (review all injected content)
+
+  Appendix D: Planning Checklist
+  - Quick reference for Chapter 8 (Planning Pattern) and Chapter 14 (gg Workflow)
+  - Before planning: Did you explore?
+    - [ ] Read CLAUDE.md and understand project structure
+    - [ ] Found similar features in codebase
+    - [ ] Identified files to modify (with line numbers)
+    - [ ] Resolved unknowns (researched, not guessed)
+  - Plan quality checklist:
+    - [ ] Overview states what + why
+    - [ ] Goals are specific and measurable
+    - [ ] Non-goals explicitly listed
+    - [ ] All file paths verified to exist
+    - [ ] Line numbers accurate (±5 lines)
+    - [ ] No vague language ("appropriately", "as needed")
+    - [ ] No placeholders or TBDs
+    - [ ] No tech debt ("temporary", "fix later")
+  - Task quality checklist:
+    - [ ] YAML frontmatter (files, complexity, language)
+    - [ ] What/Why/Where/How sections complete
+    - [ ] Code snippets show current → changed
+    - [ ] Steps are numbered and unambiguous
+    - [ ] Same-file tasks chained (file-level serialization)
+  - Red flags (stop and fix):
+    - "Update appropriately" → specify exactly what to update
+    - "src/.../SomeFile.java" → provide real path
+    - No rationale → explain why this approach
+    - "While we're here..." → scope creep, remove it
+
