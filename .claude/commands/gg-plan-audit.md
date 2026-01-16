@@ -6,6 +6,10 @@ args:
     required: false
 ---
 
+> **⚠️ AGENT MODEL CONSTRAINT**: Do NOT use `model: "haiku"` for subagents.
+> Haiku makes mistakes with complex code, and quality is our first priority.
+> Omit the `model` parameter to inherit from parent (recommended).
+
 ## Task
 
 Audit **{{plan_file}}** (default: PLAN.md) iteratively. Max 5 iterations until converged.
@@ -65,6 +69,7 @@ MainLoop:
   Print "🔍 Iteration {iteration}/5: Launching audit agent..."
 
   # Single agent audit (NOT parallel - PLAN.md is one document)
+  # NOTE: Do NOT specify model - inherit from parent per control-flow.md
   prompt = FormatPrompt(audit_prompt, plan_path, plan_content)
   result = Task(subagent_type="general-purpose", prompt=prompt)
 
