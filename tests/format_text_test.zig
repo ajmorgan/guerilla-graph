@@ -29,6 +29,8 @@ test "formatTask basic" {
     const blockers = [_]types.BlockerInfo{
         .{
             .id = 5,
+            .plan_slug = "auth",
+            .plan_task_number = 5,
             .title = "Setup database",
             .status = .completed,
             .depth = 1,
@@ -39,6 +41,8 @@ test "formatTask basic" {
     const dependents = [_]types.BlockerInfo{
         .{
             .id = 2,
+            .plan_slug = "auth",
+            .plan_task_number = 2,
             .title = "Add logout endpoint",
             .status = .open,
             .depth = 1,

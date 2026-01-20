@@ -237,22 +237,25 @@ pub const DepsStorage = struct {
         // Recursive case: Follow blocks_on_id links up to 100 levels deep
         // MIN(depth) groups duplicate blockers to show shortest path
         // ORDER BY depth ASC shows nearest blockers first
+        // Includes plan_slug and plan_task_number for formatted ID display.
         const sql =
-            \\WITH RECURSIVE blockers(id, title, status, depth) AS (
-            \\    SELECT t.id, t.title, t.status, 1 as depth
+            \\WITH RECURSIVE blockers(id, plan_slug, plan_task_number, title, status, depth) AS (
+            \\    SELECT t.id, p.slug, t.plan_task_number, t.title, t.status, 1 as depth
             \\    FROM dependencies d
             \\    JOIN tasks t ON d.blocks_on_id = t.id
+            \\    JOIN plans p ON t.plan_id = p.id
             \\    WHERE d.task_id = ?
             \\
             \\    UNION ALL
             \\
-            \\    SELECT t.id, t.title, t.status, b.depth + 1
+            \\    SELECT t.id, p.slug, t.plan_task_number, t.title, t.status, b.depth + 1
             \\    FROM blockers b
             \\    JOIN dependencies d ON b.id = d.task_id
             \\    JOIN tasks t ON d.blocks_on_id = t.id
+            \\    JOIN plans p ON t.plan_id = p.id
             \\    WHERE b.depth < 100
             \\)
-            \\SELECT id, title, status, MIN(depth) as depth
+            \\SELECT id, plan_slug, plan_task_number, title, status, MIN(depth) as depth
             \\FROM blockers
             \\GROUP BY id
             \\ORDER BY depth ASC, title ASC
@@ -264,11 +267,14 @@ pub const DepsStorage = struct {
         // Must provide deinit() method for executor's error cleanup.
         const BlockerRow = struct {
             id: u32,
+            plan_slug: []const u8,
+            plan_task_number: u32,
             title: []const u8,
             status: []const u8,
             depth: i64,
 
             pub fn deinit(row: *@This(), alloc: std.mem.Allocator) void {
+                alloc.free(row.plan_slug);
                 alloc.free(row.title);
                 alloc.free(row.status);
             }
@@ -297,12 +303,16 @@ pub const DepsStorage = struct {
         for (rows, 0..) |row, i| {
             // Assertions: Verify data integrity (Tiger Style: validate invariants)
             std.debug.assert(row.id > 0);
+            std.debug.assert(row.plan_slug.len > 0);
+            std.debug.assert(row.plan_task_number > 0);
             // Note: title can be empty (optional)
             std.debug.assert(row.depth >= 1); // Depth starts at 1 (direct blockers)
             std.debug.assert(row.depth <= 100); // Max recursion depth enforced by query
 
             blockers[i] = types.BlockerInfo{
                 .id = row.id,
+                .plan_slug = try self.allocator.dupe(u8, row.plan_slug),
+                .plan_task_number = row.plan_task_number,
                 .title = try self.allocator.dupe(u8, row.title),
                 .status = try types.TaskStatus.fromString(row.status),
                 .depth = @intCast(row.depth),
@@ -330,22 +340,25 @@ pub const DepsStorage = struct {
         // MAX depth of 100 prevents pathological cases in large graphs
         // MIN(depth) groups duplicate dependents to show shortest path
         // ORDER BY depth ASC shows nearest dependents first
+        // Includes plan_slug and plan_task_number for formatted ID display.
         const sql =
-            \\WITH RECURSIVE dependents(id, title, status, depth) AS (
-            \\    SELECT t.id, t.title, t.status, 1 as depth
+            \\WITH RECURSIVE dependents(id, plan_slug, plan_task_number, title, status, depth) AS (
+            \\    SELECT t.id, p.slug, t.plan_task_number, t.title, t.status, 1 as depth
             \\    FROM dependencies d
             \\    JOIN tasks t ON d.task_id = t.id
+            \\    JOIN plans p ON t.plan_id = p.id
             \\    WHERE d.blocks_on_id = ?
             \\
             \\    UNION ALL
             \\
-            \\    SELECT t.id, t.title, t.status, dep.depth + 1
+            \\    SELECT t.id, p.slug, t.plan_task_number, t.title, t.status, dep.depth + 1
             \\    FROM dependents dep
             \\    JOIN dependencies d ON dep.id = d.blocks_on_id
             \\    JOIN tasks t ON d.task_id = t.id
+            \\    JOIN plans p ON t.plan_id = p.id
             \\    WHERE dep.depth < 100
             \\)
-            \\SELECT id, title, status, MIN(depth) as depth
+            \\SELECT id, plan_slug, plan_task_number, title, status, MIN(depth) as depth
             \\FROM dependents
             \\GROUP BY id
             \\ORDER BY depth ASC, title ASC
@@ -357,11 +370,14 @@ pub const DepsStorage = struct {
         // Must provide deinit() method for executor's error cleanup.
         const DependentRow = struct {
             id: u32,
+            plan_slug: []const u8,
+            plan_task_number: u32,
             title: []const u8,
             status: []const u8,
             depth: i64,
 
             pub fn deinit(row: *@This(), alloc: std.mem.Allocator) void {
+                alloc.free(row.plan_slug);
                 alloc.free(row.title);
                 alloc.free(row.status);
             }
@@ -390,12 +406,16 @@ pub const DepsStorage = struct {
         for (rows, 0..) |row, i| {
             // Assertions: Verify data integrity (Tiger Style: validate invariants)
             std.debug.assert(row.id > 0);
+            std.debug.assert(row.plan_slug.len > 0);
+            std.debug.assert(row.plan_task_number > 0);
             // Note: title can be empty (optional)
             std.debug.assert(row.depth >= 1); // Depth starts at 1 (direct dependents)
             std.debug.assert(row.depth <= 100); // Max recursion depth enforced by query
 
             dependents[i] = types.BlockerInfo{
                 .id = row.id,
+                .plan_slug = try self.allocator.dupe(u8, row.plan_slug),
+                .plan_task_number = row.plan_task_number,
                 .title = try self.allocator.dupe(u8, row.title),
                 .status = try types.TaskStatus.fromString(row.status),
                 .depth = @intCast(row.depth),

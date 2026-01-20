@@ -105,6 +105,8 @@ test "BlockerInfo: memory safety with deinit" {
 
     var blocker_info = BlockerInfo{
         .id = 1,
+        .plan_slug = try allocator.dupe(u8, "auth"),
+        .plan_task_number = 1,
         .title = try allocator.dupe(u8, "Add login endpoint"),
         .status = .completed,
         .depth = 1,
@@ -112,6 +114,8 @@ test "BlockerInfo: memory safety with deinit" {
 
     // Assertions: Verify blocker info was created correctly
     try std.testing.expectEqual(@as(u32, 1), blocker_info.id);
+    try std.testing.expectEqualStrings("auth", blocker_info.plan_slug);
+    try std.testing.expectEqual(@as(u32, 1), blocker_info.plan_task_number);
     try std.testing.expectEqual(TaskStatus.completed, blocker_info.status);
     try std.testing.expectEqual(@as(u32, 1), blocker_info.depth);
 

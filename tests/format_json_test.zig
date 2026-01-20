@@ -29,6 +29,8 @@ test "formatTaskJson: produces valid JSON with all fields" {
     const blockers = [_]types.BlockerInfo{
         .{
             .id = 5,
+            .plan_slug = "auth",
+            .plan_task_number = 5,
             .title = "Setup database",
             .status = .completed,
             .depth = 1,
@@ -39,6 +41,8 @@ test "formatTaskJson: produces valid JSON with all fields" {
     const dependents = [_]types.BlockerInfo{
         .{
             .id = 2,
+            .plan_slug = "auth",
+            .plan_task_number = 2,
             .title = "Add logout endpoint",
             .status = .open,
             .depth = 1,
@@ -454,12 +458,16 @@ test "formatBlockerInfoJson: produces valid JSON for blockers" {
     const blockers = [_]types.BlockerInfo{
         .{
             .id = 1,
+            .plan_slug = "auth",
+            .plan_task_number = 1,
             .title = "Setup database",
             .status = .completed,
             .depth = 1,
         },
         .{
             .id = 5,
+            .plan_slug = "auth",
+            .plan_task_number = 5,
             .title = "Create schema",
             .status = .in_progress,
             .depth = 2,
@@ -484,8 +492,9 @@ test "formatBlockerInfoJson: produces valid JSON for blockers" {
     try std.testing.expectEqual(@as(usize, 2), blockers_arr.items.len);
     try std.testing.expectEqual(@as(i64, 2), root.get("count").?.integer);
 
-    // Validate blocker structure
-    try std.testing.expectEqual(@as(i64, 1), blockers_arr.items[0].object.get("id").?.integer);
+    // Validate blocker structure - id is now formatted string (slug:NNN)
+    try std.testing.expectEqualStrings("auth:001", blockers_arr.items[0].object.get("id").?.string);
+    try std.testing.expectEqual(@as(i64, 1), blockers_arr.items[0].object.get("internal_id").?.integer);
     try std.testing.expectEqualStrings("Setup database", blockers_arr.items[0].object.get("title").?.string);
     try std.testing.expectEqualStrings("completed", blockers_arr.items[0].object.get("status").?.string);
     try std.testing.expectEqual(@as(i64, 1), blockers_arr.items[0].object.get("depth").?.integer);
@@ -497,6 +506,8 @@ test "formatBlockerInfoJson: produces valid JSON for dependents" {
     const dependents = [_]types.BlockerInfo{
         .{
             .id = 3,
+            .plan_slug = "auth",
+            .plan_task_number = 3,
             .title = "Add password reset",
             .status = .open,
             .depth = 1,
