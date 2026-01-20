@@ -51,10 +51,12 @@ pub fn formatBlockerInfo(writer: anytype, blockers: []const types.BlockerInfo, i
             .open => " ",
         };
 
-        try writer.print("  [{s}] [depth {d}] {d}: {s} ({s})\n", .{
+        // Display formatted task ID (slug:NNN) instead of internal ID.
+        try writer.print("  [{s}] [depth {d}] {s}:{d:0>3}: {s} ({s})\n", .{
             status_indicator,
             blocker.depth,
-            blocker.id,
+            blocker.plan_slug,
+            blocker.plan_task_number,
             blocker.title,
             blocker.status.toString(),
         });
@@ -131,7 +133,12 @@ pub fn formatBlockerInfoArrayJson(writer: anytype, blockers: []const types.Block
     for (blockers, 0..) |blocker, index| {
         try writer.writeAll("      {\n");
 
-        try writer.writeAll("        \"id\": ");
+        // Use formatted task ID (slug:NNN) for external consistency.
+        try writer.writeAll("        \"id\": \"");
+        try writer.writeAll(blocker.plan_slug);
+        try writer.print(":{d:0>3}\",\n", .{blocker.plan_task_number});
+
+        try writer.writeAll("        \"internal_id\": ");
         try std.json.Stringify.value(blocker.id, .{}, writer);
         try writer.writeAll(",\n");
 

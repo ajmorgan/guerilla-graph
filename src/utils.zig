@@ -12,7 +12,7 @@ const MAX_VALID_TIMESTAMP: i64 = 4102444800; // 2100-01-01 00:00:00 UTC
 ///
 /// Returns error.EmptyId if the ID string is empty.
 /// Returns error.InvalidKebabCase if the ID contains invalid characters,
-/// starts/ends with a hyphen, or uses uppercase letters, numbers, or special characters.
+/// starts/ends with a hyphen, or uses uppercase letters or special characters.
 pub fn validateKebabCase(id: []const u8) !void {
     // Rationale: Check for empty first before asserting, since empty is a user error
     // not a programmer error. The assertion catches programmer bugs (passing empty
@@ -27,12 +27,17 @@ pub fn validateKebabCase(id: []const u8) !void {
     if (id[0] == '-') return error.InvalidKebabCase;
     if (id[id.len - 1] == '-') return error.InvalidKebabCase;
 
-    // Rationale: Kebab-case allows only lowercase letters and hyphens.
-    // This ensures consistent, readable plan IDs (auth, tech-debt).
+    // Rationale: First character must be a letter to avoid confusion with numeric
+    // task IDs (e.g., "123" could be mistaken for internal task ID).
+    if (!std.ascii.isLower(id[0])) return error.InvalidKebabCase;
+
+    // Rationale: Kebab-case allows lowercase letters, digits, and hyphens.
+    // This ensures consistent, readable plan IDs (auth, tech-debt, e2e, v2).
     // Leading/trailing hyphens are invalid to prevent ambiguity with command-line flags
     // and to maintain clean visual appearance in task IDs.
     for (id) |character| {
-        if (!std.ascii.isLower(character) and character != '-') {
+        const is_valid = std.ascii.isLower(character) or std.ascii.isDigit(character) or character == '-';
+        if (!is_valid) {
             return error.InvalidKebabCase;
         }
     }

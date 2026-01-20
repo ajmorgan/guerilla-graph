@@ -190,6 +190,8 @@ pub const PlanSummary = struct {
 /// BlockerInfo: Information about a blocking task in dependency chain
 pub const BlockerInfo = struct {
     id: u32,
+    plan_slug: []const u8,
+    plan_task_number: u32,
     title: []const u8,
     status: TaskStatus,
     depth: u32, // How many hops from original task
@@ -205,6 +207,7 @@ pub const BlockerInfo = struct {
         std.debug.assert(self.depth <= MAX_DEPENDENCY_DEPTH);
 
         // No free(self.id) - value type!
+        allocator.free(self.plan_slug);
         allocator.free(self.title);
     }
 };

@@ -152,6 +152,18 @@ pub fn handleDepAdd(
     // Rationale: Propagate errors to caller (main.zig handles user-friendly messaging).
     try storage.addDependency(args.task_id, args.blocks_on_id);
 
+    // Retrieve tasks to format IDs properly (slug:NNN format).
+    var task = try storage.getTask(args.task_id) orelse return error.TaskNotFound;
+    defer task.deinit(allocator);
+    var blocker = try storage.getTask(args.blocks_on_id) orelse return error.TaskNotFound;
+    defer blocker.deinit(allocator);
+
+    // Format task IDs for display.
+    const task_formatted_id = try utils.formatTaskId(allocator, task.plan_slug, task.plan_task_number);
+    defer allocator.free(task_formatted_id);
+    const blocker_formatted_id = try utils.formatTaskId(allocator, blocker.plan_slug, blocker.plan_task_number);
+    defer allocator.free(blocker_formatted_id);
+
     // Rationale: Display success message confirming the dependency was added.
     // Use consistent formatting with other commands.
     if (!builtin.is_test) {
@@ -163,20 +175,18 @@ pub fn handleDepAdd(
             try stdout.writeAll("{\n");
             try stdout.writeAll("  \"status\": \"success\",\n");
             try stdout.writeAll("  \"message\": \"Dependency added successfully\",\n");
-            try stdout.print("  \"task_id\": {d},\n", .{args.task_id});
-            try stdout.print("  \"blocks_on_id\": {d}\n", .{args.blocks_on_id});
+            try stdout.print("  \"task_id\": \"{s}\",\n", .{task_formatted_id});
+            try stdout.print("  \"blocks_on_id\": \"{s}\"\n", .{blocker_formatted_id});
             try stdout.writeAll("}\n");
         } else {
-            try stdout.print("Added dependency: task {d} blocks on task {d}\n", .{
-                args.task_id,
-                args.blocks_on_id,
+            try stdout.print("Added dependency: {s} blocks on {s}\n", .{
+                task_formatted_id,
+                blocker_formatted_id,
             });
         }
 
         stdout.flush() catch {};
     }
-
-    _ = allocator;
 }
 
 // ============================================================================
@@ -295,6 +305,18 @@ pub fn handleDepRemove(
     std.debug.assert(args.task_id > 0);
     std.debug.assert(args.blocks_on_id > 0);
 
+    // Retrieve tasks to format IDs properly (slug:NNN format) before removal.
+    var task = try storage.getTask(args.task_id) orelse return error.TaskNotFound;
+    defer task.deinit(allocator);
+    var blocker = try storage.getTask(args.blocks_on_id) orelse return error.TaskNotFound;
+    defer blocker.deinit(allocator);
+
+    // Format task IDs for display.
+    const task_formatted_id = try utils.formatTaskId(allocator, task.plan_slug, task.plan_task_number);
+    defer allocator.free(task_formatted_id);
+    const blocker_formatted_id = try utils.formatTaskId(allocator, blocker.plan_slug, blocker.plan_task_number);
+    defer allocator.free(blocker_formatted_id);
+
     // Rationale: removeDependency() validates dependency exists and deletes it atomically
     // within a transaction. Propagate errors to caller for user-friendly messaging.
     try storage.removeDependency(args.task_id, args.blocks_on_id);
@@ -310,20 +332,18 @@ pub fn handleDepRemove(
             try stdout.writeAll("{\n");
             try stdout.writeAll("  \"status\": \"success\",\n");
             try stdout.writeAll("  \"message\": \"Dependency removed successfully\",\n");
-            try stdout.print("  \"task_id\": {d},\n", .{args.task_id});
-            try stdout.print("  \"blocks_on_id\": {d}\n", .{args.blocks_on_id});
+            try stdout.print("  \"task_id\": \"{s}\",\n", .{task_formatted_id});
+            try stdout.print("  \"blocks_on_id\": \"{s}\"\n", .{blocker_formatted_id});
             try stdout.writeAll("}\n");
         } else {
-            try stdout.print("Removed dependency: task {d} no longer blocks on task {d}\n", .{
-                args.task_id,
-                args.blocks_on_id,
+            try stdout.print("Removed dependency: {s} no longer blocks on {s}\n", .{
+                task_formatted_id,
+                blocker_formatted_id,
             });
         }
 
         stdout.flush() catch {};
     }
-
-    _ = allocator;
 }
 
 // ============================================================================
@@ -380,6 +400,14 @@ pub fn handleDepBlockers(
     // Assertions: Task ID must be positive
     std.debug.assert(task_id > 0);
 
+    // Retrieve task to format ID properly (slug:NNN format).
+    var task = try storage.getTask(task_id) orelse return error.TaskNotFound;
+    defer task.deinit(allocator);
+
+    // Format task ID for display.
+    const task_formatted_id = try utils.formatTaskId(allocator, task.plan_slug, task.plan_task_number);
+    defer allocator.free(task_formatted_id);
+
     // Rationale: getBlockers() returns transitive dependency chain with depth information.
     // Empty result means task has no blockers and is ready to work on.
     const blockers = try storage.getBlockers(task_id);
@@ -404,7 +432,7 @@ pub fn handleDepBlockers(
         } else {
             // Rationale: Human-readable output with tree formatting.
             // Shows depth indicators (e.g., "[depth 1]", "[depth 2]") and status.
-            try stdout.print("Blockers for {d}:\n", .{task_id});
+            try stdout.print("Blockers for {s}:\n", .{task_formatted_id});
             try format.formatBlockerInfo(stdout, blockers, true);
         }
 
@@ -465,6 +493,14 @@ pub fn handleDepDependents(
     // Assertions: Task ID must be positive
     std.debug.assert(task_id > 0);
 
+    // Retrieve task to format ID properly (slug:NNN format).
+    var task = try storage.getTask(task_id) orelse return error.TaskNotFound;
+    defer task.deinit(allocator);
+
+    // Format task ID for display.
+    const task_formatted_id = try utils.formatTaskId(allocator, task.plan_slug, task.plan_task_number);
+    defer allocator.free(task_formatted_id);
+
     // Rationale: getDependents returns transitive dependent chain with depth indicators.
     // Depth shows how many levels away each dependent is (1 = direct, 2+ = indirect).
     const dependents = try storage.getDependents(task_id);
@@ -485,6 +521,7 @@ pub fn handleDepDependents(
         if (json_output) {
             try format.formatBlockerInfoJson(stdout, dependents, false);
         } else {
+            try stdout.print("Dependents for {s}:\n", .{task_formatted_id});
             try format.formatBlockerInfo(stdout, dependents, false);
         }
 
