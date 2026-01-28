@@ -50,6 +50,12 @@ Review the plan for:
 4. Are dependencies between phases clear?
 5. Are success criteria measurable?
 6. Are N+1 query risks analyzed?
+   - **Verification**: For each service method or GraphQL resolver in the plan:
+     a. Check if method iterates over entities AND calls repository/service inside loop
+     b. Check if DGS @DgsData fetchers use DataLoaders for child entity access
+     c. Check if batch operations use *ByIdIn() repository methods instead of loops
+   - **Flag as Critical** if: Repository call inside for/forEach/stream().map()
+   - **Flag as High** if: DGS resolver accesses related entities without DataLoader
 
 **Implementability Issues:**
 1. Can each phase be implemented independently?

@@ -20,7 +20,7 @@ Proposed Outline: Harness Engineering with Claude Code
       - "I don't have context on..." responses
       - Repeated questions about things you already told it
     - This book teaches you to work within this constraint
-
+[](.md)
   ---
   Part 1: The Primitives
 

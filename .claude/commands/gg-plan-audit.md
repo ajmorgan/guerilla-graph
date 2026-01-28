@@ -6,18 +6,16 @@ args:
     required: false
 ---
 
-> **⚠️ AGENT MODEL CONSTRAINT**: Do NOT use `model: "haiku"` for subagents.
-> Haiku makes mistakes with complex code, and quality is our first priority.
-> Omit the `model` parameter to inherit from parent (recommended).
-
 ## Task
 
 Audit **{{plan_file}}** (default: PLAN.md) iteratively. Max 5 iterations until converged.
 
 **Convergence criteria** (exit when ANY met):
 1. **Content unchanged**: plan_content == previous_content
-2. **Quality threshold**: 0 Critical, 0 High issues
+2. **Quality threshold**: 0 Critical, 0 High issues (gate only)
 3. **Max iterations**: 5
+
+**Fix scope**: ALL severities each iteration. Gate controls iteration, not what gets fixed.
 
 ## Control Flow
 
@@ -69,7 +67,6 @@ MainLoop:
   Print "🔍 Iteration {iteration}/5: Launching audit agent..."
 
   # Single agent audit (NOT parallel - PLAN.md is one document)
-  # NOTE: Do NOT specify model - inherit from parent per control-flow.md
   prompt = FormatPrompt(audit_prompt, plan_path, plan_content)
   result = Task(subagent_type="general-purpose", prompt=prompt)
 
@@ -90,18 +87,18 @@ MainLoop:
   previous_content = plan_content
 
   IF auto_fix:
-    Print "🔧 Fixing {findings.critical} Critical, {findings.high} High..."
-    FOR finding IN findings WHERE severity IN ["Critical", "High"]:
+    Print "🔧 Fixing all {len(findings)} issues..."
+    FOR finding IN findings:  # Fix ALL severities
       plan_content = ApplyFix(finding, plan_content, plan_path)  # See .claude/commands/_shared/fix-patterns.md
     Write(plan_path, plan_content)
   ELSE:
     Print "⏸️ Fixes available but auto-fix disabled"
     Print "Issues to address:"
-    FOR finding IN findings WHERE severity IN ["Critical", "High"]:
+    FOR finding IN findings:  # Show ALL severities
       Print "  - [{finding.severity}] {finding.issue}"
     user_fix = Ask("Apply fixes now? (yes/no)")
     IF user_fix:
-      FOR finding IN findings WHERE severity IN ["Critical", "High"]:
+      FOR finding IN findings:  # Fix ALL severities
         plan_content = ApplyFix(finding, plan_content, plan_path)
       Write(plan_path, plan_content)
     ELSE:
@@ -232,16 +229,16 @@ User: yes
 
 Claude: 🔍 Iteration 1/5: Launching audit agent...
 Claude: Iteration 1/5: 2 Critical, 5 High, 3 Medium, 8 Low
-🔧 Fixing 2 Critical, 5 High...
+🔧 Fixing all 18 issues...
 ✅ Plan updated
 
 Claude: 🔍 Iteration 2/5: Launching audit agent...
 Claude: Iteration 2/5: 0 Critical, 1 High, 2 Medium, 5 Low
-🔧 Fixing 0 Critical, 1 High...
+🔧 Fixing all 8 issues...
 ✅ Plan updated
 
 Claude: 🔍 Iteration 3/5: Launching audit agent...
-Claude: Iteration 3/5: 0 Critical, 0 High, 2 Medium, 3 Low
+Claude: Iteration 3/5: 0 Critical, 0 High, 0 Medium, 0 Low
 ✅ Converged (quality threshold)
 
 Claude: # Plan Audit Complete

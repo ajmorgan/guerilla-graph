@@ -253,4 +253,10 @@ pub fn build(b: *std.Build) void {
 
     const install_release = b.addInstallArtifact(release_exe, .{});
     install_release_step.dependOn(&install_release.step);
+
+    // Clean step. Removes build artifacts (zig-out/) and build cache (.zig-cache/).
+    // Run `zig build clean` to remove all build outputs.
+    const clean_step = b.step("clean", "Remove build artifacts and cache");
+    const clean_cmd = b.addSystemCommand(&.{ "rm", "-rf", "zig-out", ".zig-cache" });
+    clean_step.dependOn(&clean_cmd.step);
 }

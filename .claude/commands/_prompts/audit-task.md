@@ -60,6 +60,12 @@ Audit against quality-criteria.md and REPORT issues. DO NOT fix.
 - Verify defer for cleanup
 - Check naming conventions
 
+**N+1 Query Detection** (CRITICAL - check ALL code):
+- CRITICAL if: repository.find*() or service.get*() called inside for/forEach/stream().map()
+- HIGH if: DGS @DgsData resolver fetches related entities without DataLoader
+- Pattern to flag: `entities.stream().map(e -> repository.findBy*(e.getId()))`
+- Correct pattern: Batch fetch with `findByIdIn(ids)` then `groupBy()`
+
 **File Verification** (from file-verification.md):
 - VerifyFileExists for each file path
 - VerifyLineNumber for accuracy

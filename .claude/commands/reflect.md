@@ -134,6 +134,7 @@ IF user provides natural language feedback:
 - Don't add speculative features ("might be useful to...")
 - Keep changes minimal and focused
 - Each change should be independently applicable
+- **Keep edits executable**: Commands are Claude pseudocode. Match existing style—concise, no prose explanations.
 
 ---
 

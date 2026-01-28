@@ -227,6 +227,19 @@ const max_depth = 100;
 
 ---
 
+### Pattern 7: N+1 Query Risk
+
+**Flag these patterns**:
+- `repository.find*()` or `service.get*()` called inside for/forEach/stream().map()
+- DGS `@DgsData` resolver fetching related entities without DataLoader
+- Entity relationship access (`.getChildren()`, `.getParent()`) inside loops
+
+**Severity**: CRITICAL in hot paths (GraphQL resolvers), HIGH in batch jobs
+
+**Fix direction**: Batch fetch with `findByIdIn(ids)` then `groupBy()`
+
+---
+
 ## Usage Examples
 
 ### In task-gen:

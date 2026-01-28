@@ -107,6 +107,9 @@ validation_commands:
 - [ ] Reuses existing patterns (DRY)
 - [ ] No technical debt (workarounds, TODOs, backwards compatibility tech debt)
 - [ ] Performance considerations noted (N+1 queries, batching)
+  - N+1 CHECK: No repository/service calls inside loops (use batch fetch + groupBy)
+  - N+1 CHECK: DGS resolvers use DataLoaders for relationship fields
+  - N+1 CHECK: Entity relationship access uses @BatchSize or eager fetch strategy
 - [ ] Clean solution (not temporary fixes)
 
 **Code Quality** (see `code-verification.md`):

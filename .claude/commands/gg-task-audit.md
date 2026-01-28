@@ -30,6 +30,8 @@ Audit plan **{{plan}}** against **{{plan_file}}** context. Max 5 iterations.
 
 **Convergence**: Exit when 0 Critical, 0 High, ≤2 Medium issues OR no changes between iterations.
 
+**Fix scope**: ALL severities each iteration. Gate controls iteration, not what gets fixed.
+
 ---
 
 ## Preparation: Load Shared Modules
@@ -206,9 +208,10 @@ LOOP while iteration < max_iterations:
     Group findings by task_id → task_fixes map
 
     IF auto_fix:
-      Print: "🔧 Applying {critical_count + high_count} fixes..."
+      total_fixes = critical_count + high_count + medium_count + low_count
+      Print: "🔧 Applying {total_fixes} fixes..."
 
-      For each task_id in task_fixes:
+      For each task_id in task_fixes:  # Fix ALL severities
         # Use fix-patterns.md module for fix application logic
         Apply fixes based on finding.category:
           - FullContext: Add missing YAML/sections/file paths
